@@ -65,7 +65,7 @@ let silaContext = {
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
     newsletterJid: '120363422610520277@newsletter',
-    newsletterName: '𝚂𝙸𝙻𝙰 𝙼𝙳',
+    newsletterName: 'SILA TECH',
     serverMessageId: -1
   }
 };
@@ -258,12 +258,12 @@ function setupStatusHandlers(socket, userConfig) {
                         // 📨 Send confirmation message after reacting
 if (userConfig.AUTO_VIEW_STATUS === 'true') {
     await socket.sendMessage(message.key.remoteJid, {
-        text: `👑 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 *𝚅𝙸𝙴𝚆𝙴𝙳* 👀 𝚊𝚗𝚍 *𝙻𝙸𝙺𝙴𝙳* ❤️ 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n> _"𝙲𝚘𝚗𝚜𝚒𝚜𝚝𝚎𝚗𝚌𝚢 𝚋𝚞𝚒𝚕𝚍𝚜 𝚝𝚛𝚞𝚜𝚝 — 𝚎𝚟𝚎𝚗 𝚋𝚘𝚝𝚜 𝚙𝚛𝚘𝚟𝚎 𝚒𝚝."_\n\n🚀 𝙺𝚎𝚎𝚙 𝚜𝚑𝚒𝚗𝚒𝚗𝚐! 𝚃𝚑𝚎 𝚋𝚘𝚝'𝚜 𝚊𝚕𝚠𝚊𝚢𝚜 𝚠𝚊𝚝𝚌𝚑𝚒𝚗𝚐 𝚘𝚟𝚎𝚛 𝚢𝚘𝚞𝚛 𝚞𝚙𝚍𝚊𝚝𝚎𝚜 😎`,
+        text: `☠ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 *𝚅𝙸𝙴𝚆𝙴𝙳* 👀 𝚊𝚗𝚍 *𝙻𝙸𝙺𝙴𝙳* ❤️ 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n> _"𝙲𝚘𝚗𝚜𝚒𝚜𝚝𝚎𝚗𝚌𝚢 𝚋𝚞𝚒𝚕𝚍𝚜 𝚝𝚛𝚞𝚜𝚝 — 𝚎𝚟𝚎𝚗 𝚋𝚘𝚝𝚜 𝚙𝚛𝚘𝚟𝚎 𝚒𝚝."_\n\n🚀 𝙺𝚎𝚎𝚙 𝚜𝚑𝚒𝚗𝚒𝚗𝚐! 𝚃𝚑𝚎 𝚋𝚘𝚝'𝚜 𝚊𝚕𝚠𝚊𝚢𝚜 𝚠𝚊𝚝𝚌𝚑𝚒𝚗𝚐 𝚘𝚟𝚎𝚛 𝚢𝚘𝚞𝚛 𝚞𝚙𝚍𝚊𝚝𝚎𝚜 😎`,
         contextInfo: silaContext
     });
 } else {
     await socket.sendMessage(message.key.remoteJid, {
-        text: `👑 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n❤️ 𝙱𝚘𝚝 *𝙻𝙸𝙺𝙴𝙳* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n💡 𝚆𝚊𝚗𝚝 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚝𝚘 𝚊𝚕𝚜𝚘 *𝚟𝚒𝚎𝚠* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜?\n👉 𝚃𝚢𝚙𝚎 *${config.prefix}autostatus on*\n\n𝚃𝚘 𝚜𝚝𝚘𝚙 𝚊𝚞𝚝𝚘-𝚕𝚒𝚔𝚎𝚜 𝚘𝚛 𝚜𝚒𝚕𝚎𝚗𝚌𝚎 𝚛𝚎𝚊𝚌𝚝𝚒𝚘𝚗𝚜, 𝚞𝚜𝚎 *${config.prefix}autolike off*\n\n> _"𝚂𝚖𝚊𝚕𝚕 𝚐𝚎𝚜𝚝𝚞𝚛𝚎𝚜 𝚖𝚊𝚔𝚎 𝚋𝚒𝚐 𝚒𝚖𝚙𝚊𝚌𝚝𝚜 — 𝚎𝚟𝚎𝚗 𝚍𝚒𝚐𝚒𝚝𝚊𝚕 𝚘𝚗𝚎𝚜."_ 💫`,
+        text: `☠ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n❤️ 𝙱𝚘𝚝 *𝙻𝙸𝙺𝙴𝙳* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n💡 𝚆𝚊𝚗𝚝 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚝𝚘 𝚊𝚕𝚜𝚘 *𝚟𝚒𝚎𝚠* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜?\n👉 𝚃𝚢𝚙𝚎 *${config.prefix}autostatus on*\n\n𝚃𝚘 𝚜𝚝𝚘𝚙 𝚊𝚞𝚝𝚘-𝚕𝚒𝚔𝚎𝚜 𝚘𝚛 𝚜𝚒𝚕𝚎𝚗𝚌𝚎 𝚛𝚎𝚊𝚌𝚝𝚒𝚘𝚗𝚜, 𝚞𝚜𝚎 *${config.prefix}autolike off*\n\n> _"𝚂𝚖𝚊𝚕𝚕 𝚐𝚎𝚜𝚝𝚞𝚛𝚎𝚜 𝚖𝚊𝚔𝚎 𝚋𝚒𝚐 𝚒𝚖𝚙𝚊𝚌𝚝𝚜 — 𝚎𝚟𝚎𝚗 𝚍𝚒𝚐𝚒𝚝𝚊𝚕 𝚘𝚗𝚎𝚜."_ 💫`,
         contextInfo: silaContext
     });
 }
@@ -345,14 +345,14 @@ function setupCommandHandlers(socket, number, userConfig) {
                     const seconds = Math.floor(uptime % 60);
 
                    const caption = `
-╔═══════════👑 𝚂𝙸𝙻𝙰 𝙼𝙳 👑═══════════╗
+╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
 │ 🤖 *𝚂𝚃𝙰𝚃𝚄𝚂:* 𝙰𝙲𝚃𝙸𝚅𝙴 ✅
 │ ⏰ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜
 │ 🟢 *𝚂𝙴𝚂𝚂𝙸𝙾𝙽𝚂:* ${activeSockets.size}
 │ 📱 *𝚈𝙾𝚄𝚁 𝙽𝚄𝙼𝙱𝙴𝚁:* ${number}
 │ 
 [===💻 𝚂𝚈𝚂𝚃𝙴𝙼 𝚂𝚃𝙰𝚃𝚄𝚂 💻===]
-> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 👑
+> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠
 `;
                     await socket.sendMessage(sender, {
                         image: { url: userConfig.IMAGE_PATH || defaultConfig.IMAGE_PATH},
@@ -376,71 +376,77 @@ function setupCommandHandlers(socket, number, userConfig) {
     const totalRam = Math.round(os.totalmem() / 1024 / 1024);
 
     const menuCaption = `
-╔═══════════👑 𝚂𝙸𝙻𝙰 𝙼𝙳 👑═══════════╗
-│ 🤖 𝙷𝙴𝚈 ${number}  
-│ ⏰ 𝚄𝙿𝚃𝙸𝙼𝙴: ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜  
-│ 💾 𝚁𝙰𝙼: ${ramUsage}𝙼𝙱/${totalRam}𝙼𝙱
+╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
+║ 🤖 𝙷𝙴𝚈 ${number}  
+║ ⏰ 𝚄𝙿𝚃𝙸𝙼𝙴: ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜  
+║ 💾 𝚁𝙰𝙼: ${ramUsage}𝙼𝙱/${totalRam}𝙼𝙱
 ╚══════════════════════════════════════╝
 
-───────────────────────────────
-⚙️ 𝙲𝙾𝚁𝙴 𝙲𝙾𝙼𝙼𝙰𝙽𝙳𝚂
-${config.PREFIX}alive
-${config.PREFIX}setting
-${config.PREFIX}set
-${config.PREFIX}config
-${config.PREFIX}help
-${config.PREFIX}menu
-${config.PREFIX}allmenu
-${config.PREFIX}ping
-${config.PREFIX}uptime
-${config.PREFIX}tagall
-${config.PREFIX}deleteme
+╔══════════════════════════════╗
+⚙️ *CORE COMMANDS*:
+║ ➤ ${config.PREFIX}alive
+║ ➤ ${config.PREFIX}setting
+║ ➤ ${config.PREFIX}set
+║ ➤ ${config.PREFIX}config
+║ ➤ ${config.PREFIX}help
+║ ➤ ${config.PREFIX}menu
+║ ➤ ${config.PREFIX}allmenu
+║ ➤ ${config.PREFIX}ping
+║ ➤ ${config.PREFIX}uptime
+║ ➤ ${config.PREFIX}tagall
+║ ➤ ${config.PREFIX}deleteme
+╚══════════════════════════════╝
 
-───────────────────────────────
-⚡ 𝙰𝚄𝚃𝙾 𝙵𝙴𝙰𝚃𝚄𝚁𝙴𝚂
-${config.PREFIX}autostatus on/off
-${config.PREFIX}autolike on/off
-${config.PREFIX}autorecord on/off
+╔══════════════════════════════╗
+⚡ *AUTO FEATURES*:
+║ ➤ ${config.PREFIX}autostatus on/off
+║ ➤ ${config.PREFIX}autolike on/off
+║ ➤ ${config.PREFIX}autorecord on/off
+╚══════════════════════════════╝
 
-───────────────────────────────
-🎬 𝙼𝙴𝙳𝙸𝙰 & 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳
-${config.PREFIX}fb
-${config.PREFIX}facebook <url>
-${config.PREFIX}ig
-${config.PREFIX}insta
-${config.PREFIX}instagram
-${config.PREFIX}tiktok
-${config.PREFIX}ytmp4
-${config.PREFIX}song <query>
-${config.PREFIX}ytaudio <url>
-${config.PREFIX}removebg
-${config.PREFIX}nobg
-${config.PREFIX}rmbg
+╔══════════════════════════════╗
+🎬 *MEDIA & DOWNLOAD*:
+║ ➤ ${config.PREFIX}fb
+║ ➤ ${config.PREFIX}facebook <url>
+║ ➤ ${config.PREFIX}ig
+║ ➤ ${config.PREFIX}insta
+║ ➤ ${config.PREFIX}instagram
+║ ➤ ${config.PREFIX}tiktok
+║ ➤ ${config.PREFIX}ytmp4
+║ ➤ ${config.PREFIX}song <query>
+║ ➤ ${config.PREFIX}ytaudio <url>
+║ ➤ ${config.PREFIX}removebg
+║ ➤ ${config.PREFIX}nobg
+║ ➤ ${config.PREFIX}rmbg
+╚══════════════════════════════╝
 
-───────────────────────────────
-☪️✝️ 𝚁𝙴𝙻𝙸𝙶𝙸𝙾𝚄𝚂
-${config.PREFIX}biblelist
-${config.PREFIX}bible <verse>
-${config.PREFIX}quranlist
-${config.PREFIX}quran <chapter>
+╔══════════════════════════════╗
+☪️✝️ *RELIGIOUS*:
+║ ➤ ${config.PREFIX}biblelist
+║ ➤ ${config.PREFIX}bible <verse>
+║ ➤ ${config.PREFIX}quranlist
+║ ➤ ${config.PREFIX}quran <chapter>
+╚══════════════════════════════╝
 
-───────────────────────────────
-🛠 𝚃𝙾𝙾𝙻𝚂 & 𝙾𝚃𝙷𝙴𝚁
-${config.PREFIX}botlink
-${config.PREFIX}sc
-${config.PREFIX}script
-${config.PREFIX}repo
-${config.PREFIX}vv
-${config.PREFIX}vv2
-${config.PREFIX}vvtoyu
-${config.PREFIX}vv2
+╔══════════════════════════════╗
+🛠 *TOOLS & OTHER*:
+║ ➤ ${config.PREFIX}botlink
+║ ➤ ${config.PREFIX}sc
+║ ➤ ${config.PREFIX}script
+║ ➤ ${config.PREFIX}repo
+║ ➤ ${config.PREFIX}vv
+║ ➤ ${config.PREFIX}vv2
+║ ➤ ${config.PREFIX}vvtoyu
+║ ➤ ${config.PREFIX}vv2
+╚══════════════════════════════╝
 
-───────────────────────────────
-💡 𝚄𝚂𝙴𝙵𝚄𝙻 𝙲𝙾𝙼𝙼𝙰𝙽𝙳𝚂
-${config.PREFIX}idch
+╔══════════════════════════════╗
+💡 *USEFUL COMMANDS*:
+║ ➤ ${config.PREFIX}idch
+╚══════════════════════════════╝
 
-╔═══════════👑 𝚂𝙸𝙻𝙰 𝙼𝙳 👑═══════════╗
-│           𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳
+╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
+║           𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳
 ╚══════════════════════════════════════╝
 `;
 
@@ -457,7 +463,7 @@ ${config.PREFIX}idch
                     await socket.sendMessage(sender, { text: '🏓 𝙿𝚘𝚗𝚐!' });
                     const latency = Date.now() - start;
                     await socket.sendMessage(sender, { 
-                       text: `╔═══════════👑 𝚂𝙸𝙻𝙰 𝙼𝙳 👑═══════════╗\n⚡ *𝙻𝙰𝚃𝙴𝙽𝙲𝚈:* ${latency}𝚖𝚜\n📶 *𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙸𝙾𝙽:* ${latency < 500 ? '𝙴𝚇𝙲𝙴𝙻𝙻𝙴𝙽𝚃' : latency < 1000 ? '𝙶𝙾𝙾𝙳' : '𝙿𝙾𝙾𝚁'}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝`,
+                       text: `╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗\n⚡ *𝙻𝙰𝚃𝙴𝙽𝙲𝚈:* ${latency}𝚖𝚜\n📶 *𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙸𝙾𝙽:* ${latency < 500 ? '𝙴𝚇𝙲𝙴𝙻𝙻𝙴𝙽𝚃' : latency < 1000 ? '𝙶𝙾𝙾𝙳' : '𝙿𝙾𝙾𝚁'}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝`,
                         contextInfo: silaContext
                     });
                     break;
@@ -471,7 +477,7 @@ ${config.PREFIX}idch
                     const seconds = Math.floor(uptime % 60);
                     
                     await socket.sendMessage(sender, {
-                     text: `╔═══════════👑 𝚂𝙸𝙻𝙰 𝙼𝙳 👑═══════════╗\n[===💻 𝚂𝚈𝚂𝚃𝙴𝙼 𝚂𝚃𝙰𝚃𝚄𝚂 💻===]\n│ ⏰ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜\n│ 📊 *𝚂𝙴𝚂𝚂𝙸𝙾𝙽𝚂:* ${activeSockets.size}\n[══════════════════════════]\n│ ⚙️ *𝙱𝙾𝚃:* 𝚂𝙸𝙻𝙰 𝙼𝙳 🚀-𝙼𝙸𝙽𝙸\n│ 👑 *𝙾𝚆𝙽𝙴𝚁:* 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝\n\n> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 👑`,
+                     text: `╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗\n[===💻 𝚂𝚈𝚂𝚃𝙴𝙼 𝚂𝚃𝙰𝚃𝚄𝚂 💻===]\n│ ⏰ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜\n│ 📊 *𝚂𝙴𝚂𝚂𝙸𝙾𝙽𝚂:* ${activeSockets.size}\n[══════════════════════════]\n│ ⚙️ *𝙱𝙾𝚃:* 𝚂𝙸𝙻𝙰 𝙼𝙳 🚀-𝙼𝙸𝙽𝙸\n│ 👑 *𝙾𝚆𝙽𝙴𝚁:* 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝\n\n> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 👑`,
                         contextInfo: silaContext
                     });
                     break;
