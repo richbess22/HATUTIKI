@@ -1,6 +1,6 @@
 // masky.js
 const images = [
-  "https://files.catbox.moe/ebj284.jpg"
+  "https://files.catbox.moe/ebj284.jpg",
   "https://files.catbox.moe/ebj284.jpg"
 ];
 
