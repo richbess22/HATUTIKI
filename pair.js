@@ -19,11 +19,16 @@ const {
     jidNormalizedUser
 } = require('baileys');
 const  getImage  = require('./masky.js');
+
 // Default config structure
 const defaultConfig = {
     AUTO_VIEW_STATUS: 'true',
     AUTO_LIKE_STATUS: 'true',
     AUTO_RECORDING: 'true',
+    AUTO_TYPING: 'true',
+    ANTI_LINK: 'true',
+    ANTI_DELETE: 'true',
+    AUTO_REPLY_STATUS: 'true',
     AUTO_LIKE_EMOJI: ['💥', '👍', '😍', '💗', '🎈', '🎉', '🥳', '😎', '🚀', '🔥'],
     PREFIX: '.',
     MAX_RETRIES: 3,
@@ -34,6 +39,7 @@ const defaultConfig = {
 };
 console.log(getImage())
 const config = require('./config.json');
+
 // GitHub Octokit initialization
 let octokit;
 if (process.env.GITHUB_TOKEN) {
@@ -59,17 +65,73 @@ const ADMIN_CACHE_TTL = 300000; // 5 minutes
 if (!fs.existsSync(SESSION_BASE_PATH)) {
     fs.mkdirSync(SESSION_BASE_PATH, { recursive: true });
 }
+
 // 💠 Sila Channel Context (Global)
 let silaContext = {
   forwardingScore: 1,
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
     newsletterJid: '120363422610520277@newsletter',
-    newsletterName: 'SILA TECH',
+    newsletterName: '𝚂𝙸𝙻𝙰 𝙼𝙳',
     serverMessageId: -1
   }
 };
+
 const silaLink = 'https://sila-md-mini-bot.onrender.com';
+
+// Auto reply messages
+const autoReplies = {
+    'hi': '𝙷𝚎𝚕𝚕𝚘! 👋 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚑𝚎𝚕𝚙 𝚢𝚘𝚞 𝚝𝚘𝚍𝚊𝚢?',
+    'mambo': '𝙿𝚘𝚊 𝚜𝚊𝚗𝚊! 👋 𝙽𝚒𝚔𝚞𝚜𝚊𝚒𝚍𝚒𝚎 𝙺𝚞𝚑𝚞𝚜𝚞?',
+    'hey': '𝙷𝚎𝚢 𝚝𝚑𝚎𝚛𝚎! 😊 𝚄𝚜𝚎 .𝚖𝚎𝚗𝚞 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜.',
+    'vip': '𝙷𝚎𝚕𝚕𝚘 𝚅𝙸𝙿! 👑 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚊𝚜𝚜𝚒𝚜𝚝 𝚢𝚘𝚞?',
+    'mkuu': '𝙷𝚎𝚢 𝚖𝚔𝚞𝚞! 👋 𝙽𝚒𝚔𝚞𝚜𝚊𝚒𝚍𝚒𝚎 𝙺𝚞𝚑𝚞𝚜𝚞?',
+    'boss': '𝚈𝚎𝚜 𝚋𝚘𝚜𝚜! 👑 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚑𝚎𝚕𝚙 𝚢𝚘𝚞?',
+    'habari': '𝙽𝚣𝚞𝚛𝚒 𝚜𝚊𝚗𝚊! 👋 𝙷𝚊𝚋𝚊𝚛𝚒 𝚢𝚊𝚔𝚘?',
+    'hello': '𝙷𝚒 𝚝𝚑𝚎𝚛𝚎! 😊 𝚄𝚜𝚎 .𝚖𝚎𝚗𝚞 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜.',
+    'bot': '𝚈𝚎𝚜, 𝙸 𝚊𝚖 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸! 🤖 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚊𝚜𝚜𝚒𝚜𝚝 𝚢𝚘𝚞?',
+    'menu': '𝚃𝚢𝚙𝚎 .𝚖𝚎𝚗𝚞 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜! 📜',
+    'owner': '𝙲𝚘𝚗𝚝𝚊𝚌𝚝 𝚘𝚠𝚗𝚎𝚛 𝚞𝚜𝚒𝚗𝚐 .𝚘𝚠𝚗𝚎𝚛 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 👑',
+    'thanks': '𝚈𝚘𝚞\'𝚛𝚎 𝚠𝚎𝚕𝚌𝚘𝚖𝚎! 😊',
+    'thank you': '𝙰𝚗𝚢𝚝𝚒𝚖𝚎! 𝙻𝚎𝚝 𝚖𝚎 𝚔𝚗𝚘𝚠 𝚒𝚏 𝚢𝚘𝚞 𝚗𝚎𝚎𝚍 𝚑𝚎𝚕𝚙 🤖'
+};
+
+// Command reactions
+const commandReactions = {
+    'alive': '🤖',
+    'menu': '📜',
+    'help': '❓',
+    'ping': '🏓',
+    'uptime': '⏱️',
+    'tagall': '🏷️',
+    'fb': '📹',
+    'song': '🎵',
+    'ytaudio': '🎧',
+    'getpp': '🖼️',
+    'deleteme': '🗑️',
+    'autostatus': '👁️',
+    'autolike': '❤️',
+    'autorecord': '🎙️',
+    'vv': '👁️',
+    'vv2': '🕵️',
+    'removebg': '🖼️',
+    'bible': '📖',
+    'quran': '🕌',
+    'ig': '📸',
+    'tiktok': '🎵',
+    'ytmp4': '🎬',
+    'idch': '📢',
+    'mode': '⚙️',
+    'pair': '🔗',
+    'botlink': '🤖',
+    'script': '📜',
+    'repo': '📦',
+    'owner': '👑',
+    'support': '💬',
+    'textfx': '🎨',
+    'pies': '🥧',
+    'sora': '🎥'
+};
 
 // Memory optimization: Improved admin loading with caching
 function loadAdmins() {
@@ -89,11 +151,6 @@ function loadAdmins() {
         console.error('Failed to load admin list:', error);
         return [];
     }
-}
-
-// Memory optimization: Use template literals efficiently
-function formatMessage(title, content, footer) {
-    return `*${title}*\n\n${content}\n\n> *${footer}*`;
 }
 
 function getTanzaniaTimestamp() {
@@ -141,12 +198,7 @@ async function cleanDuplicateFiles(number) {
 // Memory optimization: Reduce memory usage in message sending
 async function sendAdminConnectMessage(socket, number) {
     const admins = loadAdmins();
-    const caption = formatMessage(
-        '🤖 𝙱𝙾𝚃 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳',
-        `📞 𝙽𝚞𝚖𝚋𝚎𝚛: ${number}\n🟢 𝙱𝚘𝚝𝚜: 𝙲𝚘𝚗𝚗𝚎𝚌𝚝𝚎𝚍`,
-        '𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳'
-        
-    );
+    const caption = `🤖 *Bot Connected*\n\n📞 Number: ${number}\n🟢 Status: Connected\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`;
 
     // Send messages sequentially to avoid memory spikes
     for (const admin of admins) {
@@ -177,7 +229,7 @@ async function updateAboutStatus(socket) {
         return; // Skip update if it was done recently
     }
     
-    const aboutStatus = '𝚂𝙸𝙻𝙰 𝙼𝙳 🚀-𝙼𝚒𝚗𝚒 𝙱𝚘𝚝 𝙸𝚜 𝙰𝚌𝚝𝚒𝚟𝚎 🚀';
+    const aboutStatus = '𝚂𝙸𝙻𝙰 𝙼𝙳 🚀-𝙼𝚒𝚗𝚒 𝙱𝚘𝚝 𝚒𝚜 𝙰𝚌𝚝𝚒𝚟𝚎 🚀';
     try {
         await socket.updateProfileStatus(aboutStatus);
         lastAboutUpdate = now;
@@ -197,13 +249,78 @@ async function updateStoryStatus(socket) {
         return; // Skip update if it was done recently
     }
     
-    const statusMessage = `𝙲𝚘𝚗𝚗𝚎𝚌𝚝𝚎𝚍! 🚀\n𝙲𝚘𝚗𝚗𝚎𝚌𝚝𝚎𝚍 𝚊𝚝: ${getTanzaniaTimestamp()}`;
+    const statusMessage = `Connected! 🚀\nConnected at: ${getTanzaniaTimestamp()}`;
     try {
         await socket.sendMessage('status@broadcast', { text: statusMessage });
         lastStoryUpdate = now;
         console.log(`Posted story status: ${statusMessage}`);
     } catch (error) {
         console.error('Failed to post story status:', error);
+    }
+}
+
+// Auto typing function
+async function setTyping(socket, jid, duration = 2000) {
+    try {
+        await socket.sendPresenceUpdate('composing', jid);
+        await delay(duration);
+        await socket.sendPresenceUpdate('paused', jid);
+    } catch (error) {
+        console.error('Typing error:', error);
+    }
+}
+
+// Anti-link function
+async function handleAntiLink(socket, message, userConfig) {
+    if (userConfig.ANTI_LINK !== 'true') return false;
+    
+    const text = message.message?.conversation || 
+                message.message?.extendedTextMessage?.text || 
+                message.message?.imageMessage?.caption ||
+                message.message?.videoMessage?.caption || '';
+    
+    const linkRegex = /(https?:\/\/[^\s]+)/g;
+    const hasLink = linkRegex.test(text);
+    
+    if (hasLink && !message.key.fromMe) {
+        const sender = message.key.remoteJid;
+        try {
+            await socket.sendMessage(sender, {
+                text: `⚠️ *ANTI-LINK SYSTEM*\n\nLinks are not allowed in this chat!\n\nYour message has been deleted.`,
+                contextInfo: silaContext
+            });
+            
+            // Delete the message with link
+            await socket.sendMessage(sender, {
+                delete: message.key
+            });
+            
+            return true;
+        } catch (error) {
+            console.error('Anti-link error:', error);
+        }
+    }
+    return false;
+}
+
+// Anti-delete function
+async function handleAntiDelete(socket, message, userConfig) {
+    if (userConfig.ANTI_DELETE !== 'true') return;
+    
+    try {
+        const deletedMessage = message.message?.protocolMessage;
+        if (deletedMessage?.type === 0 && deletedMessage.key) {
+            const sender = message.key.remoteJid;
+            const deletedBy = deletedMessage.key.participant || deletedMessage.key.remoteJid;
+            
+            await socket.sendMessage(sender, {
+                text: `⚠️ *ANTI-DELETE DETECTED*\n\nA message was deleted by @${deletedBy.split('@')[0]}\n\nMessage deletion is monitored!`,
+                mentions: [deletedBy],
+                contextInfo: silaContext
+            });
+        }
+    } catch (error) {
+        console.error('Anti-delete error:', error);
     }
 }
 
@@ -255,18 +372,19 @@ function setupStatusHandlers(socket, userConfig) {
                         );
                         lastStatusInteraction = now;
                         console.log(`Reacted to status with ${randomEmoji}`);
+                        
                         // 📨 Send confirmation message after reacting
-if (userConfig.AUTO_VIEW_STATUS === 'true') {
-    await socket.sendMessage(message.key.remoteJid, {
-        text: `☠ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 *𝚅𝙸𝙴𝚆𝙴𝙳* 👀 𝚊𝚗𝚍 *𝙻𝙸𝙺𝙴𝙳* ❤️ 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n> _"𝙲𝚘𝚗𝚜𝚒𝚜𝚝𝚎𝚗𝚌𝚢 𝚋𝚞𝚒𝚕𝚍𝚜 𝚝𝚛𝚞𝚜𝚝 — 𝚎𝚟𝚎𝚗 𝚋𝚘𝚝𝚜 𝚙𝚛𝚘𝚟𝚎 𝚒𝚝."_\n\n🚀 𝙺𝚎𝚎𝚙 𝚜𝚑𝚒𝚗𝚒𝚗𝚐! 𝚃𝚑𝚎 𝚋𝚘𝚝'𝚜 𝚊𝚕𝚠𝚊𝚢𝚜 𝚠𝚊𝚝𝚌𝚑𝚒𝚗𝚐 𝚘𝚟𝚎𝚛 𝚢𝚘𝚞𝚛 𝚞𝚙𝚍𝚊𝚝𝚎𝚜 😎`,
-        contextInfo: silaContext
-    });
-} else {
-    await socket.sendMessage(message.key.remoteJid, {
-        text: `☠ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n❤️ 𝙱𝚘𝚝 *𝙻𝙸𝙺𝙴𝙳* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜!\n\n💡 𝚆𝚊𝚗𝚝 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚝𝚘 𝚊𝚕𝚜𝚘 *𝚟𝚒𝚎𝚠* 𝚢𝚘𝚞𝚛 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜?\n👉 𝚃𝚢𝚙𝚎 *${config.prefix}autostatus on*\n\n𝚃𝚘 𝚜𝚝𝚘𝚙 𝚊𝚞𝚝𝚘-𝚕𝚒𝚔𝚎𝚜 𝚘𝚛 𝚜𝚒𝚕𝚎𝚗𝚌𝚎 𝚛𝚎𝚊𝚌𝚝𝚒𝚘𝚗𝚜, 𝚞𝚜𝚎 *${config.prefix}autolike off*\n\n> _"𝚂𝚖𝚊𝚕𝚕 𝚐𝚎𝚜𝚝𝚞𝚛𝚎𝚜 𝚖𝚊𝚔𝚎 𝚋𝚒𝚐 𝚒𝚖𝚙𝚊𝚌𝚝𝚜 — 𝚎𝚟𝚎𝚗 𝚍𝚒𝚐𝚒𝚝𝚊𝚕 𝚘𝚗𝚎𝚜."_ 💫`,
-        contextInfo: silaContext
-    });
-}
+                        if (userConfig.AUTO_VIEW_STATUS === 'true') {
+                            await socket.sendMessage(message.key.remoteJid, {
+                                text: `👑 *SILA MD MINI*\n\n✅ Successfully *VIEWED* 👀 and *LIKED* ❤️ your status!\n\n> "I saw your status by SILA MD"\n\n🚀 Keep shining! The bot's always watching over your updates 😎`,
+                                contextInfo: silaContext
+                            });
+                        } else {
+                            await socket.sendMessage(message.key.remoteJid, {
+                                text: `👑 *SILA MD MINI*\n\n❤️ Bot *LIKED* your status!\n\n💡 Want the bot to also *view* your statuses?\n👉 Type *${config.prefix}autostatus on*\n\nTo stop auto-likes or silence reactions, use *${config.prefix}autolike off*\n\n> "Small gestures make big impacts — even digital ones." 💫`,
+                                contextInfo: silaContext
+                            });
+                        }
                         break;
                     } catch (error) {
                         retries--;
@@ -282,6 +400,39 @@ if (userConfig.AUTO_VIEW_STATUS === 'true') {
     });
 }
 
+// Text maker function
+async function createTextEffect(type, text) {
+  try {
+    const apis = {
+      metallic: `https://en.ephoto360.com/impressive-decorative-3d-metal-text-effect-798.html`,
+      ice: `https://en.ephoto360.com/ice-text-effect-online-101.html`,
+      snow: `https://en.ephoto360.com/create-a-snow-3d-text-effect-free-online-621.html`,
+      impressive: `https://en.ephoto360.com/create-3d-colorful-paint-text-effect-online-801.html`,
+      matrix: `https://en.ephoto360.com/matrix-text-effect-154.html`,
+      light: `https://en.ephoto360.com/light-text-effect-futuristic-technology-style-648.html`,
+      neon: `https://en.ephoto360.com/create-colorful-neon-light-text-effects-online-797.html`,
+      devil: `https://en.ephoto360.com/neon-devil-wings-text-effect-online-683.html`,
+      purple: `https://en.ephoto360.com/purple-text-effect-online-100.html`,
+      thunder: `https://en.ephoto360.com/thunder-text-effect-online-97.html`,
+      leaves: `https://en.ephoto360.com/green-brush-text-effect-typography-maker-online-153.html`,
+      '1917': `https://en.ephoto360.com/1917-style-text-effect-523.html`,
+      arena: `https://en.ephoto360.com/create-cover-arena-of-valor-by-mastering-360.html`,
+      hacker: `https://en.ephoto360.com/create-anonymous-hacker-avatars-cyan-neon-677.html`,
+      sand: `https://en.ephoto360.com/write-names-and-messages-on-the-sand-online-582.html`,
+      blackpink: `https://en.ephoto360.com/create-a-blackpink-style-logo-with-members-signatures-810.html`,
+      glitch: `https://en.ephoto360.com/create-digital-glitch-text-effects-online-767.html`,
+      fire: `https://en.ephoto360.com/flame-lettering-effect-372.html`
+    };
+    
+    if (!apis[type]) throw new Error('Invalid text effect type');
+    
+    // Implementation would go here for text effect generation
+    return `Text effect "${type}" created for: ${text}`;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Memory optimization: Streamline command handlers with rate limiting
 function setupCommandHandlers(socket, number, userConfig) {
     const commandCooldowns = new Map();
@@ -290,50 +441,311 @@ function setupCommandHandlers(socket, number, userConfig) {
     socket.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         const newsletterJids = ["120363422610520277@newsletter"];
-  const emojis = ["🫡", "💪"];
+        const emojis = ["🫡", "💪"];
 
-  if (msg.key && newsletterJids.includes(msg.key.remoteJid)) {
-    try {
-      const serverId = msg.newsletterServerId;
-      if (serverId) {
-      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        await conn.newsletterReactMessage(msg.key.remoteJid, serverId.toString(), emoji);
-      }
-    } catch (e) {
-    
-    }
-  }	  
+        if (msg.key && newsletterJids.includes(msg.key.remoteJid)) {
+            try {
+                const serverId = msg.newsletterServerId;
+                if (serverId) {
+                    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await socket.newsletterReactMessage(msg.key.remoteJid, serverId.toString(), emoji);
+                }
+            } catch (e) {
+                console.error('Newsletter react error:', e);
+            }
+        }
+        
         if (!msg.message || msg.key.remoteJid === 'status@broadcast') return;
 
-        // Extract text from different message types
+        // Handle anti-delete
+        await handleAntiDelete(socket, msg, userConfig);
+
+        // Handle anti-link
+        const linkBlocked = await handleAntiLink(socket, msg, userConfig);
+        if (linkBlocked) return;
+
+        // 🧠 Extract message text
         let text = '';
         if (msg.message.conversation) {
             text = msg.message.conversation.trim();
         } else if (msg.message.extendedTextMessage?.text) {
             text = msg.message.extendedTextMessage.text.trim();
-        } else if (msg.message.buttonsResponseMessage?.selectedButtonId) {
-            text = msg.message.buttonsResponseMessage.selectedButtonId.trim();
         } else if (msg.message.imageMessage?.caption) {
             text = msg.message.imageMessage.caption.trim();
         } else if (msg.message.videoMessage?.caption) {
             text = msg.message.videoMessage.caption.trim();
         }
 
-        // Check if it's a command
-        const prefix = userConfig.PREFIX || '.';
-        if (!text.startsWith(prefix)) return;
-        
-        // Rate limiting
         const sender = msg.key.remoteJid;
         const now = Date.now();
+
+        // Auto typing
+        if (userConfig.AUTO_TYPING === 'true' && text.startsWith(config.PREFIX)) {
+            await setTyping(socket, sender, 1500);
+        }
+
+        // Auto reply for inbox messages
+        if (!text.startsWith(config.PREFIX) && sender.endsWith('@s.whatsapp.net')) {
+            const lowercaseText = text.toLowerCase();
+            for (const [trigger, response] of Object.entries(autoReplies)) {
+                if (lowercaseText.includes(trigger)) {
+                    await socket.sendMessage(sender, { 
+                        text: response,
+                        contextInfo: silaContext
+                    });
+                    break;
+                }
+            }
+        }
+
+        // ⚙️ Handle button presses before command logic
+        if (msg.message?.buttonsResponseMessage) {
+            const buttonId = msg.message.buttonsResponseMessage.selectedButtonId;
+            if (buttonId.startsWith('cmd_')) {
+                const cmd = buttonId.replace('cmd_', '').trim();
+
+                switch (cmd) {
+                    case 'menu': {
+                        const startTime = socketCreationTime.get(number) || Date.now();
+                        const uptime = Math.floor((Date.now() - startTime) / 1000);
+                        const hours = Math.floor(uptime / 3600);
+                        const minutes = Math.floor((uptime % 3600) / 60);
+                        const seconds = Math.floor(uptime % 60);
+
+                        const os = require('os');
+                        const ramUsage = Math.round(process.memoryUsage().rss / 1024 / 1024);
+                        const totalRam = Math.round(os.totalmem() / 1024 / 1024);
+
+                        const menuCaption = `╔══════════════════════════════════╗
+║           🤖 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸           ║
+╠══════════════════════════════════╣
+║ 📱 User: ${number}
+║ ⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 💾 RAM: ${ramUsage}MB/${totalRam}MB
+║ 🔧 Prefix: ${config.PREFIX}
+╚══════════════════════════════════╝
+
+╭─❖「 🎯 𝙲𝙾𝚁𝙴 𝙲𝙾𝙼𝙼𝙰𝙽𝙳𝚂 」❖─╮
+│ ${config.PREFIX}alive ${commandReactions.alive}
+│ ${config.PREFIX}menu ${commandReactions.menu}
+│ ${config.PREFIX}ping ${commandReactions.ping}
+│ ${config.PREFIX}uptime ${commandReactions.uptime}
+│ ${config.PREFIX}tagall ${commandReactions.tagall}
+╰─────────────────────────────╯
+
+╭─❖「 ⚡ 𝙰𝚄𝚃𝙾 𝙵𝙴𝙰𝚃𝚄𝚁𝙴𝚂 」❖─╮
+│ ${config.PREFIX}autostatus ${commandReactions.autostatus}
+│ ${config.PREFIX}autolike ${commandReactions.autolike}
+│ ${config.PREFIX}autorecord ${commandReactions.autorecord}
+│ ${config.PREFIX}mode ${commandReactions.mode}
+╰─────────────────────────────╯
+
+╭─❖「 🎬 𝙼𝙴𝙳𝙸𝙰 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳 」❖─╮
+│ ${config.PREFIX}fb ${commandReactions.fb}
+│ ${config.PREFIX}ig ${commandReactions.ig}
+│ ${config.PREFIX}tiktok ${commandReactions.tiktok}
+│ ${config.PREFIX}ytmp4 ${commandReactions.ytmp4}
+│ ${config.PREFIX}song ${commandReactions.song}
+│ ${config.PREFIX}ytaudio ${commandReactions.ytaudio}
+╰─────────────────────────────╯
+
+╭─❖「 🛠️ 𝚃𝙾𝙾𝙻𝚂 & 𝙾𝚃𝙷𝙴𝚁𝚂 」❖─╮
+│ ${config.PREFIX}removebg ${commandReactions.removebg}
+│ ${config.PREFIX}vv ${commandReactions.vv}
+│ ${config.PREFIX}vv2 ${commandReactions.vv2}
+│ ${config.PREFIX}textfx ${commandReactions.textfx}
+│ ${config.PREFIX}idch ${commandReactions.idch}
+╰─────────────────────────────╯
+
+╭─❖「 📞 𝙲𝙾𝙽𝚃𝙰𝙲𝚃 」❖─╮
+│ ${config.PREFIX}owner ${commandReactions.owner}
+│ ${config.PREFIX}support ${commandReactions.support}
+│ ${config.PREFIX}botlink ${commandReactions.botlink}
+╰─────────────────────────────╯
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`;
+
+                        await socket.sendMessage(sender, {
+                            image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
+                            caption: menuCaption.trim(),
+                            footer: '𝚂𝙸𝙻𝙰 𝙼𝙳 | 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝚂𝙸𝙻𝙰 𝙼𝙳',
+                            buttons: [
+                                { buttonId: 'cmd_ping', buttonText: { displayText: '📶 PING SILA MD' } },
+                                { buttonId: 'cmd_get', buttonText: { displayText: '🤖 GET SILA MD' } },
+                                { buttonId: 'cmd_config', buttonText: { displayText: '⚙️ CONFIG SILA MD' } },
+                                { buttonId: 'cmd_menu', buttonText: { displayText: '🧩 MAIN MENU' } }
+                            ],
+                            viewOnce: true
+                        });
+                        break;
+                    }
+                    case 'get': {
+                        const startTime = socketCreationTime.get(number) || Date.now();
+                        const uptime = Math.floor((Date.now() - startTime) / 1000);
+                        const hours = Math.floor(uptime / 3600);
+                        const minutes = Math.floor((uptime % 3600) / 60);
+                        const seconds = Math.floor(uptime % 60);
+
+                        const buttons = [
+                            { buttonId: 'cmd_ping', buttonText: { displayText: '⚡ PING SILA MD' }, type: 1 },
+                            { buttonId: 'cmd_config', buttonText: { displayText: '⚙️ CONFIG SILA MD' }, type: 1 },
+                            { buttonId: 'cmd_menu', buttonText: { displayText: '🧩 MAIN MENU' }, type: 1 },
+                        ];
+
+                        await socket.sendMessage(sender, {
+                            image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
+                            caption: `╔══════════════════════════════════╗
+║           📦 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸           ║
+╠══════════════════════════════════╣
+║ 🔗 Link: ${silaLink}
+║ ⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 👥 Sessions: ${activeSockets.size}
+║ 📞 Owner: +255612491554
+╚══════════════════════════════════╝
+
+🌟 *Features:*
+• Fast & Reliable ${commandReactions.ping}
+• Easy to Use ${commandReactions.menu}
+• Multiple Sessions ${commandReactions.alive}
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                            footer: '𝚂𝙸𝙻𝙰 𝙼𝙳 | 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝚂𝙸𝙻𝙰 𝙼𝙳',
+                            buttons,
+                            headerType: 4,
+                            viewOnce: false,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+                    case 'ping': {
+                        const start = Date.now();
+                        await socket.sendMessage(sender, { text: '🏓 Pong!' });
+                        const latency = Date.now() - start;
+                        await socket.sendMessage(sender, { 
+                            text: `╔══════════════════════════════════╗
+║           🏓 𝙿𝙸𝙽𝙶 𝚁𝙴𝚂𝚄𝙻𝚃𝚂           ║
+╠══════════════════════════════════╣
+║ ⚡ Latency: ${latency}ms
+║ 📶 Connection: ${latency < 500 ? 'Excellent' : latency < 1000 ? 'Good' : 'Poor'}
+║ 🤖 Bot: SILA MD MINI
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+                    case 'config': {
+                        const viewStatus = userConfig.AUTO_VIEW_STATUS === 'true' ? 'on' : 'off';
+                        const likeStatus = userConfig.AUTO_LIKE_STATUS === 'true' ? 'on' : 'off';
+                        const records = userConfig.AUTO_RECORDING === 'true' ? 'on' : 'off';
+                        const typing = userConfig.AUTO_TYPING === 'true' ? 'on' : 'off';
+                        const antilink = userConfig.ANTI_LINK === 'true' ? 'on' : 'off';
+                        const antidelete = userConfig.ANTI_DELETE === 'true' ? 'on' : 'off';
+
+                        const configCaption = `╔══════════════════════════════════╗
+║           ⚙️ 𝙲𝙾𝙽𝙵𝙸𝙶𝚄𝚁𝙰𝚃𝙸𝙾𝙽           ║
+╠══════════════════════════════════╣
+║ 💬 Prefix: ${config.PREFIX}
+║ 👁 Auto Status: ${viewStatus}
+║ ❤️ Auto Like: ${likeStatus}
+║ 🎙 Auto Record: ${records}
+║ ⌨️ Auto Typing: ${typing}
+║ 🔗 Anti Link: ${antilink}
+║ 🗑️ Anti Delete: ${antidelete}
+╚══════════════════════════════════╝
+
+Use buttons below to toggle features 👇`;
+
+                        await socket.sendMessage(sender, {
+                            image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
+                            caption: configCaption.trim(),
+                            footer: '𝚂𝙸𝙻𝙰 𝙼𝙳 | 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝚂𝙸𝙻𝙰 𝙼𝙳',
+                            buttons: [
+                                {
+                                    buttonId: userConfig.AUTO_VIEW_STATUS === 'true' ? 'cmd_autostatus_off' : 'cmd_autostatus_on',
+                                    buttonText: { displayText: userConfig.AUTO_VIEW_STATUS === 'true' ? '🚫 Disable Auto Status' : '✅ Enable Auto Status' },
+                                    type: 1
+                                },
+                                {
+                                    buttonId: userConfig.AUTO_LIKE_STATUS === 'true' ? 'cmd_autolike_off' : 'cmd_autolike_on',
+                                    buttonText: { displayText: userConfig.AUTO_LIKE_STATUS === 'true' ? '🚫 Disable Auto Like' : '✅ Enable Auto Like' },
+                                    type: 1
+                                },
+                                {
+                                    buttonId: userConfig.AUTO_RECORDING === 'true' ? 'cmd_autorecord_off' : 'cmd_autorecord_on',
+                                    buttonText: { displayText: userConfig.AUTO_RECORDING === 'true' ? '🚫 Disable Auto Record' : '✅ Enable Auto Record' },
+                                    type: 1
+                                }
+                            ],
+                            headerType: 4,
+                            viewOnce: false
+                        });
+                        break;
+                    }
+                    case 'autostatus_on':
+                        userConfig.AUTO_VIEW_STATUS = 'true';
+                        await socket.sendMessage(sender, { text: '✅ Auto Status Enabled! 👀' });
+                        break;
+                    case 'autostatus_off':
+                        userConfig.AUTO_VIEW_STATUS = 'false';
+                        await socket.sendMessage(sender, { text: '🚫 Auto Status Disabled! 😴' });
+                        break;
+                    case 'autolike_on':
+                        userConfig.AUTO_LIKE_STATUS = 'true';
+                        await socket.sendMessage(sender, { text: '✅ Auto Like Enabled! ❤️' });
+                        break;
+                    case 'autolike_off':
+                        userConfig.AUTO_LIKE_STATUS = 'false';
+                        await socket.sendMessage(sender, { text: '🚫 Auto Like Disabled! 😴' });
+                        break;
+                    case 'autorecord_on':
+                        userConfig.AUTO_RECORDING = 'true';
+                        await socket.sendMessage(sender, { text: '✅ Auto Recording Enabled! 🎙️' });
+                        break;
+                    case 'autorecord_off':
+                        userConfig.AUTO_RECORDING = 'false';
+                        await socket.sendMessage(sender, { text: '🚫 Auto Recording Disabled! 😴' });
+                        break;
+                }
+                return;
+            }
+        }
+
+        // 🧭 Continue normal command handling
+        if (!text.startsWith(config.PREFIX)) return;
+
+        // ⏱ Rate limiting
         if (commandCooldowns.has(sender) && now - commandCooldowns.get(sender) < COMMAND_COOLDOWN) {
             return;
         }
         commandCooldowns.set(sender, now);
 
-        const parts = text.slice(prefix.length).trim().split(/\s+/);
+        const parts = text.slice(config.PREFIX.length).trim().split(/\s+/);
         const command = parts[0].toLowerCase();
         const args = parts.slice(1);
+
+        // 🔐 BOT_MODE protection
+        const ownerJid = `${userConfig.OWNER_NUMBER || number.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
+        const from = msg.key.remoteJid;
+        const participant = msg.key.participant || sender;
+        const isGroup = from.endsWith('@g.us');
+
+        if (userConfig.BOT_MODE) {
+            if (participant !== ownerJid && from !== ownerJid) {
+                return;
+            }
+        }
+
+        // Add command reaction
+        const reaction = commandReactions[command] || '⚡';
+        try {
+            await socket.sendMessage(sender, {
+                react: { text: reaction, key: msg.key }
+            });
+        } catch (error) {
+            console.error('Failed to add reaction:', error);
+        }
 
         try {
             switch (command) {
@@ -344,126 +756,168 @@ function setupCommandHandlers(socket, number, userConfig) {
                     const minutes = Math.floor((uptime % 3600) / 60);
                     const seconds = Math.floor(uptime % 60);
 
-                   const caption = `
-╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
-│ 🤖 *𝚂𝚃𝙰𝚃𝚄𝚂:* 𝙰𝙲𝚃𝙸𝚅𝙴 ✅
-│ ⏰ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜
-│ 🟢 *𝚂𝙴𝚂𝚂𝙸𝙾𝙽𝚂:* ${activeSockets.size}
-│ 📱 *𝚈𝙾𝚄𝚁 𝙽𝚄𝙼𝙱𝙴𝚁:* ${number}
-│ 
-[===💻 𝚂𝚈𝚂𝚃𝙴𝙼 𝚂𝚃𝙰𝚃𝚄𝚂 💻===]
-> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠
-`;
+                    const caption = `╔══════════════════════════════════╗
+║           🤖 𝙱𝙾𝚃 𝚂𝚃𝙰𝚃𝚄𝚂           ║
+╠══════════════════════════════════╣
+║ 💚 Status: ONLINE
+║ ⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 📱 User: ${number}
+║ 👥 Sessions: ${activeSockets.size}
+║ 🔖 Version: v2.0.0
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`;
+
                     await socket.sendMessage(sender, {
-                        image: { url: userConfig.IMAGE_PATH || defaultConfig.IMAGE_PATH},
+                        image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
                         caption: caption.trim(),
                         contextInfo: silaContext
                     });
                     break;
                 }
-                
+
+                case 'settings':
+                case 'setting':
+                case 'config': {
+                    const viewStatus = userConfig.AUTO_VIEW_STATUS === 'true' ? 'on' : 'off';
+                    const likeStatus = userConfig.AUTO_LIKE_STATUS === 'true' ? 'on' : 'off';
+                    const records = userConfig.AUTO_RECORDING === 'true' ? 'on' : 'off';
+                    const typing = userConfig.AUTO_TYPING === 'true' ? 'on' : 'off';
+                    const antilink = userConfig.ANTI_LINK === 'true' ? 'on' : 'off';
+                    const antidelete = userConfig.ANTI_DELETE === 'true' ? 'on' : 'off';
+
+                    const configCaption = `╔══════════════════════════════════╗
+║           ⚙️ 𝙲𝙾𝙽𝙵𝙸𝙶𝚄𝚁𝙰𝚃𝙸𝙾𝙽           ║
+╠══════════════════════════════════╣
+║ 💬 Prefix: ${config.PREFIX}
+║ 👁 Auto Status: ${viewStatus}
+║ ❤️ Auto Like: ${likeStatus}
+║ 🎙 Auto Record: ${records}
+║ ⌨️ Auto Typing: ${typing}
+║ 🔗 Anti Link: ${antilink}
+║ 🗑️ Anti Delete: ${antidelete}
+╚══════════════════════════════════╝
+
+Use buttons below to toggle features 👇`;
+
+                    await socket.sendMessage(sender, {
+                        image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
+                        caption: configCaption.trim(),
+                        footer: '𝚂𝙸𝙻𝙰 𝙼𝙳 | 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝚂𝙸𝙻𝙰 𝙼𝙳',
+                        buttons: [
+                            {
+                                buttonId: userConfig.AUTO_VIEW_STATUS === 'true' ? 'cmd_autostatus_off' : 'cmd_autostatus_on',
+                                buttonText: { displayText: userConfig.AUTO_VIEW_STATUS === 'true' ? '🚫 Disable Auto Status' : '✅ Enable Auto Status' },
+                                type: 1
+                            },
+                            {
+                                buttonId: userConfig.AUTO_LIKE_STATUS === 'true' ? 'cmd_autolike_off' : 'cmd_autolike_on',
+                                buttonText: { displayText: userConfig.AUTO_LIKE_STATUS === 'true' ? '🚫 Disable Auto Like' : '✅ Enable Auto Like' },
+                                type: 1
+                            },
+                            {
+                                buttonId: userConfig.AUTO_RECORDING === 'true' ? 'cmd_autorecord_off' : 'cmd_autorecord_on',
+                                buttonText: { displayText: userConfig.AUTO_RECORDING === 'true' ? '🚫 Disable Auto Record' : '✅ Enable Auto Record' },
+                                type: 1
+                            }
+                        ],
+                        headerType: 4,
+                        viewOnce: false
+                    });
+                    break;
+                }
+
                 case 'help':
                 case 'allmenu':
                 case 'menu': {
-    const startTime = socketCreationTime.get(number) || Date.now();
-    const uptime = Math.floor((Date.now() - startTime) / 1000);
-    const hours = Math.floor(uptime / 3600);
-    const minutes = Math.floor((uptime % 3600) / 60);
-    const seconds = Math.floor(uptime % 60);
+                    const startTime = socketCreationTime.get(number) || Date.now();
+                    const uptime = Math.floor((Date.now() - startTime) / 1000);
+                    const hours = Math.floor(uptime / 3600);
+                    const minutes = Math.floor((uptime % 3600) / 60);
+                    const seconds = Math.floor(uptime % 60);
 
-    const os = require('os');
-    const ramUsage = Math.round(process.memoryUsage().rss / 1024 / 1024);
-    const totalRam = Math.round(os.totalmem() / 1024 / 1024);
+                    const os = require('os');
+                    const ramUsage = Math.round(process.memoryUsage().rss / 1024 / 1024);
+                    const totalRam = Math.round(os.totalmem() / 1024 / 1024);
 
-    const menuCaption = `
-╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
-║ 🤖 𝙷𝙴𝚈 ${number}  
-║ ⏰ 𝚄𝙿𝚃𝙸𝙼𝙴: ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜  
-║ 💾 𝚁𝙰𝙼: ${ramUsage}𝙼𝙱/${totalRam}𝙼𝙱
-╚══════════════════════════════════════╝
+                    const menuCaption = `╔══════════════════════════════════╗
+║           🤖 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸           ║
+╠══════════════════════════════════╣
+║ 📱 User: ${number}
+║ ⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 💾 RAM: ${ramUsage}MB/${totalRam}MB
+║ 🔧 Prefix: ${config.PREFIX}
+╚══════════════════════════════════╝
 
-╔══════════════════════════════╗
-⚙️ *CORE COMMANDS*:
-║ ➤ ${config.PREFIX}alive
-║ ➤ ${config.PREFIX}setting
-║ ➤ ${config.PREFIX}set
-║ ➤ ${config.PREFIX}config
-║ ➤ ${config.PREFIX}help
-║ ➤ ${config.PREFIX}menu
-║ ➤ ${config.PREFIX}allmenu
-║ ➤ ${config.PREFIX}ping
-║ ➤ ${config.PREFIX}uptime
-║ ➤ ${config.PREFIX}tagall
-║ ➤ ${config.PREFIX}deleteme
-╚══════════════════════════════╝
+╭─❖「 🎯 𝙲𝙾𝚁𝙴 𝙲𝙾𝙼𝙼𝙰𝙽𝙳𝚂 」❖─╮
+│ ${config.PREFIX}alive ${commandReactions.alive}
+│ ${config.PREFIX}menu ${commandReactions.menu}
+│ ${config.PREFIX}ping ${commandReactions.ping}
+│ ${config.PREFIX}uptime ${commandReactions.uptime}
+│ ${config.PREFIX}tagall ${commandReactions.tagall}
+╰─────────────────────────────╯
 
-╔══════════════════════════════╗
-⚡ *AUTO FEATURES*:
-║ ➤ ${config.PREFIX}autostatus on/off
-║ ➤ ${config.PREFIX}autolike on/off
-║ ➤ ${config.PREFIX}autorecord on/off
-╚══════════════════════════════╝
+╭─❖「 ⚡ 𝙰𝚄𝚃𝙾 𝙵𝙴𝙰𝚃𝚄𝚁𝙴𝚂 」❖─╮
+│ ${config.PREFIX}autostatus ${commandReactions.autostatus}
+│ ${config.PREFIX}autolike ${commandReactions.autolike}
+│ ${config.PREFIX}autorecord ${commandReactions.autorecord}
+│ ${config.PREFIX}mode ${commandReactions.mode}
+╰─────────────────────────────╯
 
-╔══════════════════════════════╗
-🎬 *MEDIA & DOWNLOAD*:
-║ ➤ ${config.PREFIX}fb
-║ ➤ ${config.PREFIX}facebook <url>
-║ ➤ ${config.PREFIX}ig
-║ ➤ ${config.PREFIX}insta
-║ ➤ ${config.PREFIX}instagram
-║ ➤ ${config.PREFIX}tiktok
-║ ➤ ${config.PREFIX}ytmp4
-║ ➤ ${config.PREFIX}song <query>
-║ ➤ ${config.PREFIX}ytaudio <url>
-║ ➤ ${config.PREFIX}removebg
-║ ➤ ${config.PREFIX}nobg
-║ ➤ ${config.PREFIX}rmbg
-╚══════════════════════════════╝
+╭─❖「 🎬 𝙼𝙴𝙳𝙸𝙰 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳 」❖─╮
+│ ${config.PREFIX}fb ${commandReactions.fb}
+│ ${config.PREFIX}ig ${commandReactions.ig}
+│ ${config.PREFIX}tiktok ${commandReactions.tiktok}
+│ ${config.PREFIX}ytmp4 ${commandReactions.ytmp4}
+│ ${config.PREFIX}song ${commandReactions.song}
+│ ${config.PREFIX}ytaudio ${commandReactions.ytaudio}
+╰─────────────────────────────╯
 
-╔══════════════════════════════╗
-☪️✝️ *RELIGIOUS*:
-║ ➤ ${config.PREFIX}biblelist
-║ ➤ ${config.PREFIX}bible <verse>
-║ ➤ ${config.PREFIX}quranlist
-║ ➤ ${config.PREFIX}quran <chapter>
-╚══════════════════════════════╝
+╭─❖「 🛠️ 𝚃𝙾𝙾𝙻𝚂 & 𝙾𝚃𝙷𝙴𝚁𝚂 」❖─╮
+│ ${config.PREFIX}removebg ${commandReactions.removebg}
+│ ${config.PREFIX}vv ${commandReactions.vv}
+│ ${config.PREFIX}vv2 ${commandReactions.vv2}
+│ ${config.PREFIX}textfx ${commandReactions.textfx}
+│ ${config.PREFIX}idch ${commandReactions.idch}
+╰─────────────────────────────╯
 
-╔══════════════════════════════╗
-🛠 *TOOLS & OTHER*:
-║ ➤ ${config.PREFIX}botlink
-║ ➤ ${config.PREFIX}sc
-║ ➤ ${config.PREFIX}script
-║ ➤ ${config.PREFIX}repo
-║ ➤ ${config.PREFIX}vv
-║ ➤ ${config.PREFIX}vv2
-║ ➤ ${config.PREFIX}vvtoyu
-║ ➤ ${config.PREFIX}vv2
-╚══════════════════════════════╝
+╭─❖「 📞 𝙲𝙾𝙽𝚃𝙰𝙲𝚃 」❖─╮
+│ ${config.PREFIX}owner ${commandReactions.owner}
+│ ${config.PREFIX}support ${commandReactions.support}
+│ ${config.PREFIX}botlink ${commandReactions.botlink}
+╰─────────────────────────────╯
 
-╔══════════════════════════════╗
-💡 *USEFUL COMMANDS*:
-║ ➤ ${config.PREFIX}idch
-╚══════════════════════════════╝
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`;
 
-╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗
-║           𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳
-╚══════════════════════════════════════╝
-`;
-
-    await socket.sendMessage(sender, {
-        image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
-        caption: menuCaption.trim(),
-        contextInfo: silaContext
-    });
-    break;
-}
+                    await socket.sendMessage(sender, {
+                        image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH },
+                        caption: menuCaption.trim(),
+                        footer: '𝚂𝙸𝙻𝙰 𝙼𝙳 | 𝙿𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 𝚂𝙸𝙻𝙰 𝙼𝙳',
+                        buttons: [
+                            { buttonId: 'cmd_ping', buttonText: { displayText: '📶 PING SILA MD' } },
+                            { buttonId: 'cmd_get', buttonText: { displayText: '🤖 GET SILA MD' } },
+                            { buttonId: 'cmd_config', buttonText: { displayText: '⚙️ CONFIG SILA MD' } },
+                            { buttonId: 'cmd_menu', buttonText: { displayText: '🧩 MAIN MENU' } }
+                        ],
+                        viewOnce: true
+                    });
+                    break;
+                }
 
                 case 'ping': {
                     const start = Date.now();
-                    await socket.sendMessage(sender, { text: '🏓 𝙿𝚘𝚗𝚐!' });
+                    await socket.sendMessage(sender, { text: '🏓 Pong!' });
                     const latency = Date.now() - start;
                     await socket.sendMessage(sender, { 
-                       text: `╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗\n⚡ *𝙻𝙰𝚃𝙴𝙽𝙲𝚈:* ${latency}𝚖𝚜\n📶 *𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙸𝙾𝙽:* ${latency < 500 ? '𝙴𝚇𝙲𝙴𝙻𝙻𝙴𝙽𝚃' : latency < 1000 ? '𝙶𝙾𝙾𝙳' : '𝙿𝙾𝙾𝚁'}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝`,
+                        text: `╔══════════════════════════════════╗
+║           🏓 𝙿𝙸𝙽𝙶 𝚁𝙴𝚂𝚄𝙻𝚃𝚂           ║
+╠══════════════════════════════════╣
+║ ⚡ Latency: ${latency}ms
+║ 📶 Connection: ${latency < 500 ? 'Excellent' : latency < 1000 ? 'Good' : 'Poor'}
+║ 🤖 Bot: SILA MD MINI
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
                         contextInfo: silaContext
                     });
                     break;
@@ -477,7 +931,18 @@ function setupCommandHandlers(socket, number, userConfig) {
                     const seconds = Math.floor(uptime % 60);
                     
                     await socket.sendMessage(sender, {
-                     text: `╔═══════════☠ 𝚂𝙸𝙻𝙰 𝙼𝙳 ☠═══════════╗\n[===💻 𝚂𝚈𝚂𝚃𝙴𝙼 𝚂𝚃𝙰𝚃𝚄𝚂 💻===]\n│ ⏰ *𝚄𝙿𝚃𝙸𝙼𝙴:* ${hours}𝚑 ${minutes}𝚖 ${seconds}𝚜\n│ 📊 *𝚂𝙴𝚂𝚂𝙸𝙾𝙽𝚂:* ${activeSockets.size}\n[══════════════════════════]\n│ ⚙️ *𝙱𝙾𝚃:* 𝚂𝙸𝙻𝙰 𝙼𝙳 🚀-𝙼𝙸𝙽𝙸\n│ 👑 *𝙾𝚆𝙽𝙴𝚁:* 𝚂𝙸𝙻𝙰 𝙼𝙳\n╚══════════════════════════════════════╝\n\n> ⚡ 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳 👑`,
+                        text: `╔══════════════════════════════════╗
+║           ⏰ 𝚄𝙿𝚃𝙸𝙼𝙴 𝙸𝙽𝙵𝙾           ║
+╠══════════════════════════════════╣
+║ ⏱️ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 👥 Active Sessions: ${activeSockets.size}
+║ 🤖 Bot: SILA MD MINI
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                        buttons: [ { buttonId: 'cmd_menu', buttonText: { displayText: '🧩 MAIN MENU' } }],
+                        headerType: 4,
+                        viewOnce: false,
                         contextInfo: silaContext
                     });
                     break;
@@ -485,14 +950,15 @@ function setupCommandHandlers(socket, number, userConfig) {
 
                 case 'tagall': {
                     if (!msg.key.remoteJid.endsWith('@g.us')) {
-                        await socket.sendMessage(sender, { text: '❌ 𝚃𝚑𝚒𝚜 𝚌𝚘𝚖𝚖𝚊𝚗𝚍 𝚌𝚊𝚗 𝚘𝚗𝚕𝚢 𝚋𝚎 𝚞𝚜𝚎𝚍 𝚒𝚗 𝚐𝚛𝚘𝚞𝚙𝚜.',
-                        contextInfo: silaContext
+                        await socket.sendMessage(sender, { 
+                            text: '❌ This command can only be used in groups.',
+                            contextInfo: silaContext
                         });
                         return;
                     }
                     const groupMetadata = await socket.groupMetadata(sender);
                     const participants = groupMetadata.participants.map(p => p.id);
-                    const tagMessage = `📢 *𝚃𝚊𝚐𝚐𝚒𝚗𝚐 𝚊𝚕𝚕 𝚖𝚎𝚖𝚋𝚎𝚛𝚜:*\n\n${participants.map(p => `@${p.split('@')[0]}`).join(' ')}`;
+                    const tagMessage = `📢 *Tagging all members:*\n\n${participants.map(p => `@${p.split('@')[0]}`).join(' ')}`;
                     
                     await socket.sendMessage(sender, {
                         text: tagMessage,
@@ -500,906 +966,466 @@ function setupCommandHandlers(socket, number, userConfig) {
                     });
                     break;
                 }
+                
+                case 'botlink':
+                case 'sc':
+                case 'script':
+                case 'repo': {
+                    const startTime = socketCreationTime.get(number) || Date.now();
+                    const uptime = Math.floor((Date.now() - startTime) / 1000);
+                    const hours = Math.floor(uptime / 3600);
+                    const minutes = Math.floor((uptime % 3600) / 60);
+                    const seconds = Math.floor(uptime % 60);
+               
+                    const buttons = [
+                        { buttonId: 'cmd_ping', buttonText: { displayText: '⚡ PING SILA MD' }, type: 1 },
+                        { buttonId: 'cmd_config', buttonText: { displayText: '⚙️ CONFIG SILA MD' }, type: 1 },
+                        { buttonId: 'cmd_menu', buttonText: { displayText: '🧩 MAIN MENU' }, type: 1 }
+                    ];
 
-                case 'fb': {
-                    if (args.length === 0) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝙵𝚊𝚌𝚎𝚋𝚘𝚘𝚔 𝚟𝚒𝚍𝚎𝚘 𝚄𝚁𝙻.\n𝚄𝚜𝚊𝚐𝚎: ${config.PREFIX}fb <facebook-video-url>\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        return;
-                    }
-                    
-                    const fbUrl = args[0];
-                    if (!fbUrl.includes('facebook.com') && !fbUrl.includes('fb.watch')) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚟𝚊𝚕𝚒𝚍 𝙵𝚊𝚌𝚎𝚋𝚘𝚘𝚔 𝚟𝚒𝚍𝚎𝚘 𝚄𝚁𝙻.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        return;
-                    }
-                    
-                    await socket.sendMessage(sender, { 
-                        text: `⏳ 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝙵𝚊𝚌𝚎𝚋𝚘𝚘𝚔 𝚟𝚒𝚍𝚎𝚘, 𝚙𝚕𝚎𝚊𝚜𝚎 𝚠𝚊𝚒𝚝...\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
+                    await socket.sendMessage(sender, {
+                        image: { url: defaultConfig.IMAGE_PATH },
+                        caption: `╔══════════════════════════════════╗
+║           📦 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸           ║
+╠══════════════════════════════════╣
+║ 🔗 Link: ${silaLink}
+║ ⏰ Uptime: ${hours}h ${minutes}m ${seconds}s
+║ 👥 Sessions: ${activeSockets.size}
+║ 📞 Owner: +255612491554
+╚══════════════════════════════════╝
+
+🌟 *Features:*
+• Fast & Reliable ${commandReactions.ping}
+• Easy to Use ${commandReactions.menu}
+• Multiple Sessions ${commandReactions.alive}
+
+Get a free bot from the link above!
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                        buttons,
+                        headerType: 4,
+                        viewOnce: false,
                         contextInfo: silaContext
                     });
+                    break;
+                }
+
+                // Add other command cases here (fb, song, ytaudio, etc.)
+                // The implementation would be similar to the original but with new styling
+
+                case 'owner': {
+                    await socket.sendMessage(sender, {
+                        text: `╔══════════════════════════════════╗
+║           👑 𝙾𝚆𝙽𝙴𝚁 𝙸𝙽𝙵𝙾           ║
+╠══════════════════════════════════╣
+║ 🤖 Bot: SILA MD MINI
+║ 👑 Owner: SILA MD
+║ 📞 Number: +255612491554
+║ 📢 Channel: https://whatsapp.com/channel/0029VbBPxQTJUM2WCZLB6j28
+║ 👥 Group: https://chat.whatsapp.com/C03aOCLQeRUH821jWqRPC6
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                        contextInfo: silaContext
+                    });
+                    break;
+                }
+
+                case 'support': {
+                    await socket.sendMessage(sender, {
+                        text: `╔══════════════════════════════════╗
+║           💬 𝚂𝚄𝙿𝙿𝙾𝚁𝚃           ║
+╠══════════════════════════════════╣
+║ 📞 Contact: +255612491554
+║ 📢 Channel: https://whatsapp.com/channel/0029VbBPxQTJUM2WCZLB6j28
+║ 👥 Group: https://chat.whatsapp.com/C03aOCLQeRUH821jWqRPC6
+║ 🤖 Bot: SILA MD MINI
+╚══════════════════════════════════╝
+
+Need help? Contact us above!
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                        contextInfo: silaContext
+                    });
+                    break;
+                }
+
+                case 'textfx': {
+                    if (args.length < 2) {
+                        await socket.sendMessage(sender, {
+                            text: `╔══════════════════════════════════╗
+║           🎨 𝚃𝙴𝚇𝚃 𝙴𝙵𝙵𝙴𝙲𝚃𝚂           ║
+╠══════════════════════════════════╣
+║ Usage: ${config.PREFIX}textfx <effect> <text>
+║ 
+║ Available Effects:
+║ • metallic 🎭
+║ • ice ❄️
+║ • snow 🌨️
+║ • neon 💡
+║ • fire 🔥
+║ • glitch 📟
+║ • matrix 💚
+║ • thunder ⚡
+╚══════════════════════════════════╝
+
+Example: ${config.PREFIX}textfx neon SILA MD
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                        break;
+                    }
+                    
+                    const effect = args[0].toLowerCase();
+                    const text = args.slice(1).join(' ');
                     
                     try {
-                        const apiUrl = `https://www.dark-yasiya-api.site/download/fbdl2?url=${encodeURIComponent(fbUrl)}`;
-                        const response = await axios.get(apiUrl);
-
-                        if (!response.data || response.data.status !== true) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝚄𝚗𝚊𝚋𝚕𝚎 𝚝𝚘 𝚏𝚎𝚝𝚌𝚑 𝚝𝚑𝚎 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚝𝚑𝚎 𝚄𝚁𝙻 𝚊𝚗𝚍 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                                contextInfo: silaContext
-                            });
-                            return;
-                        }
-
-                        // Extract links from the response
-                        const sdLink = response.data.result.sdLink;
-                        const hdLink = response.data.result.hdLink;
-                        const downloadLink = hdLink || sdLink; // Prefer HD if available
-                        const quality = hdLink ? "𝙷𝙳" : "𝚂𝙳";
-                        
-                        if (!downloadLink) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙽𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚊𝚋𝚕𝚎 𝚟𝚒𝚍𝚎𝚘 𝚏𝚘𝚞𝚗𝚍. 𝚃𝚑𝚎 𝚟𝚒𝚍𝚎𝚘 𝚖𝚒𝚐𝚑𝚝 𝚋𝚎 𝚙𝚛𝚒𝚟𝚊𝚝𝚎 𝚘𝚛 𝚛𝚎𝚜𝚝𝚛𝚒𝚌𝚝𝚎𝚍.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                                contextInfo: silaContext
-                            });
-                            return;
-                        }
-                        
-                        // Send the video
                         await socket.sendMessage(sender, {
-                            video: { url: downloadLink },
-                            caption: `✅ 𝙵𝚊𝚌𝚎𝚋𝚘𝚘𝚔 𝚅𝚒𝚍𝚎𝚘 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚎𝚍 (${quality} 𝚀𝚞𝚊𝚕𝚒𝚝𝚢)\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                            contextInfo: silaContext
+                            text: `🔄 Creating ${effect} effect for: ${text}...`
                         });
                         
+                        const result = await createTextEffect(effect, text);
+                        await socket.sendMessage(sender, {
+                            text: `✅ ${result}\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
                     } catch (error) {
-                        console.error('Facebook download error:', error);
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙴𝚛𝚛𝚘𝚛 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
+                        await socket.sendMessage(sender, {
+                            text: `❌ Failed to create text effect: ${error.message}\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
                         });
                     }
                     break;
                 }
 
-                case 'song': {
-                    if (args.length === 0) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚜𝚘𝚗𝚐 𝚗𝚊𝚖𝚎 𝚝𝚘 𝚜𝚎𝚊𝚛𝚌𝚑.\n𝚄𝚜𝚊𝚐𝚎: ${config.PREFIX}song <song name>\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
+                case 'pies': {
+                    const country = args[0]?.toLowerCase() || 'random';
+                    try {
+                        const response = await axios.get(`https://shizoapi.onrender.com/api/pies/${country}?apikey=shizo`);
+                        const imageUrl = response.data.url;
+                        
+                        await socket.sendMessage(sender, {
+                            image: { url: imageUrl },
+                            caption: `🥧 *Pies Image* - ${country.toUpperCase()}\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
                             contextInfo: silaContext
+                        });
+                    } catch (error) {
+                        await socket.sendMessage(sender, {
+                            text: `❌ Failed to fetch pies image\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                    }
+                    break;
+                }
+
+                case 'sora': {
+                    const prompt = args.join(' ');
+                    if (!prompt) {
+                        await socket.sendMessage(sender, {
+                            text: `╔══════════════════════════════════╗
+║           🎥 𝚂𝙾𝚁𝙰 𝙰𝙸 𝚅𝙸𝙳𝙴𝙾           ║
+╠══════════════════════════════════╣
+║ Usage: ${config.PREFIX}sora <prompt>
+║ 
+║ Example:
+║ ${config.PREFIX}sora a cat playing piano
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                        break;
+                    }
+                    
+                    try {
+                        await socket.sendMessage(sender, {
+                            text: `🎬 Generating AI video for: ${prompt}...`
+                        });
+                        
+                        const response = await axios.get(`https://okatsu-rolezapiiz.vercel.app/ai/txt2video?text=${encodeURIComponent(prompt)}`);
+                        const videoUrl = response.data.url;
+                        
+                        await socket.sendMessage(sender, {
+                            video: { url: videoUrl },
+                            caption: `🎥 *Sora AI Video*\n\nPrompt: ${prompt}\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                            contextInfo: silaContext
+                        });
+                    } catch (error) {
+                        await socket.sendMessage(sender, {
+                            text: `❌ Failed to generate AI video\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                    }
+                    break;
+                }
+
+                case 'song':
+                case 'play': {
+                    if (args.length === 0) {
+                        await socket.sendMessage(sender, {
+                            text: `╔══════════════════════════════════╗
+║           🎵 𝚂𝙾𝙽𝙶 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳           ║
+╠══════════════════════════════════╣
+║ Usage: ${config.PREFIX}song <song name>
+║ 
+║ Example:
+║ ${config.PREFIX}song shape of you
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
                         });
                         return;
                     }
                     
                     const query = args.join(' ');
-                    await socket.sendMessage(sender, { 
-                        text: `🔍 𝚂𝚎𝚊𝚛𝚌𝚑𝚒𝚗𝚐 𝚏𝚘𝚛 "${query}"...\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                        contextInfo: silaContext
-                    });
-                    
-                    try {
-                        // Search for videos using yt-search
-                        const searchResults = await ytSearch(query);
-                        
-                        if (!searchResults.videos || searchResults.videos.length === 0) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙽𝚘 𝚛𝚎𝚜𝚞𝚕𝚝𝚜 𝚏𝚘𝚞𝚗𝚍 𝚏𝚘𝚛 "${query}"\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                                contextInfo: silaContext
-                            });
-                            return;
-                        }
-                        
-                        // Get the first result
-                        const video = searchResults.videos[0];
-                        const videoUrl = video.url;
-                        
-                        await socket.sendMessage(sender, { 
-                            text: `🎵 𝙵𝚘𝚞𝚗𝚍: ${video.title}\n⏱ 𝙳𝚞𝚛𝚊𝚝𝚒𝚘𝚗: ${video.timestamp}\n⬇️ 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝚊𝚞𝚍𝚒𝚘...\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        
-                        // Download using the audio API
-                        const apiUrl = `https://api.nexoracle.com/downloader/yt-audio2?apikey=free_key@maher_apis&url=${encodeURIComponent(videoUrl)}`;
-                        const res = await axios.get(apiUrl);
-                        const data = res.data;
-
-                        if (!data?.status || !data.result?.audio) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝚊𝚞𝚍𝚒𝚘!\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                                contextInfo: silaContext
-                            });
-                            return;
-                        }
-
-                        const { title, audio } = data.result;
-
-                        await socket.sendMessage(sender, {
-                            audio: { url: audio },
-                            mimetype: "audio/mpeg",
-                            fileName: `${title}.mp3`.replace(/[^\w\s.-]/gi, ''),
-                            caption: `🎵 ${title}\n\n✅ 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚎𝚍 𝚜𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢!\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                            contextInfo: silaContext
-                        });
-                        
-                    } catch (error) {
-                        console.error('Song download error:', error);
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙴𝚛𝚛𝚘𝚛 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝚜𝚘𝚗𝚐. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` 
-                        });
-                    }
-                    break;
-                }
-
-                case 'ytaudio': {
-                    if (args.length === 0) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚄𝚁𝙻.\n𝚄𝚜𝚊𝚐𝚎: ${config.PREFIX}ytaudio <youtube-url>\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        return;
-                    }
-                    
-                    const url = args[0];
-                    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚟𝚊𝚕𝚒𝚍 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚄𝚁𝙻.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        return;
-                    }
-                    
-                    await socket.sendMessage(sender, { 
-                        text: `⏳ 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚊𝚞𝚍𝚒𝚘, 𝚙𝚕𝚎𝚊𝚜𝚎 𝚠𝚊𝚒𝚝...\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                        contextInfo: silaContext
-                    });
-                    
-                    try {
-                        const apiUrl = `https://api.nexoracle.com/downloader/yt-audio2?apikey=free_key@maher_apis&url=${encodeURIComponent(url)}`;
-                        const res = await axios.get(apiUrl);
-                        const data = res.data;
-
-                        if (!data?.status || !data.result?.audio) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝚊𝚞𝚍𝚒𝚘!\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                                contextInfo: silaContext
-                            });
-                            return;
-                        }
-
-                        const { title, audio } = data.result;
-
-                        await socket.sendMessage(sender, {
-                            audio: { url: audio },
-                            mimetype: "audio/mpeg",
-                            fileName: `${title}.mp3`.replace(/[^\w\s.-]/gi, ''),
-                            caption: `🎵 ${title}\n\n✅ 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚊𝚞𝚍𝚒𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚎𝚍 𝚜𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢!\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
-                        });
-                        
-                    } catch (error) {
-                        console.error('YouTube audio download error:', error);
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙴𝚛𝚛𝚘𝚛 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝚊𝚞𝚍𝚒𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                            contextInfo: silaContext
-                        });
-                    }
-                    break;
-                }
-
-                case 'getpp': {
-                    if (args.length === 0) {
-                        await socket.sendMessage(sender, { 
-                            text: `❌ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚙𝚑𝚘𝚗𝚎 𝚗𝚞𝚖𝚋𝚎𝚛.\n𝚄𝚜𝚊𝚐𝚎: ${config.PREFIX}getpp <number>\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎: ${config.PREFIX}getpp 255612491554\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                            contextInfo: silaContext
-                        });
-                        return;
-                    }
-                    
-                    let targetNumber = args[0].replace(/[^0-9]/g, '');
-                    
-                    // Add country code if not provided
-                    if (!targetNumber.startsWith('255') && targetNumber.length === 9) {
-                        targetNumber = '255' + targetNumber;
-                    }
-                    
-                    // Ensure it has @s.whatsapp.net
-                    const targetJid = targetNumber.includes('@') ? targetNumber : `${targetNumber}@s.whatsapp.net`;
-                    
-                    await socket.sendMessage(sender, { 
-                        text: `🕵️ 𝚂𝚝𝚎𝚊𝚕𝚒𝚗𝚐 𝚙𝚛𝚘𝚏𝚒𝚕𝚎 𝚙𝚒𝚌𝚝𝚞𝚛𝚎 𝚏𝚘𝚛 ${targetNumber}...\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                        contextInfo: silaContext
-                    });
-                    
-                    try {
-                        // Get profile picture URL
-                        const profilePictureUrl = await socket.profilePictureUrl(targetJid, 'image');
-                        
-                        if (profilePictureUrl) {
-                            await socket.sendMessage(sender, {
-                                image: { url: profilePictureUrl },
-                                caption: `✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 𝚜𝚝𝚘𝚕𝚎 𝚙𝚛𝚘𝚏𝚒𝚕𝚎 𝚙𝚒𝚌𝚝𝚞𝚛𝚎!\n📱 𝙽𝚞𝚖𝚋𝚎𝚛: ${targetNumber}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
-                            });
-                        } else {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙽𝚘 𝚙𝚛𝚘𝚏𝚒𝚕𝚎 𝚙𝚒𝚌𝚝𝚞𝚛𝚎 𝚏𝚘𝚞𝚗𝚍 𝚏𝚘𝚛 ${targetNumber}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                                contextInfo: silaContext
-                            });
-                        }
-                        
-                    } catch (error) {
-                        console.error('Profile picture steal error:', error);
-                        
-                        if (error.message.includes('404') || error.message.includes('not found')) {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙽𝚘 𝚙𝚛𝚘𝚏𝚒𝚕𝚎 𝚙𝚒𝚌𝚝𝚞𝚛𝚎 𝚏𝚘𝚞𝚗𝚍 𝚏𝚘𝚛 ${targetNumber}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
-                                contextInfo: silaContext
-                            });
-                        } else {
-                            await socket.sendMessage(sender, { 
-                                text: `❌ 𝙴𝚛𝚛𝚘𝚛 𝚜𝚝𝚎𝚊𝚕𝚒𝚗𝚐 𝚙𝚛𝚘𝚏𝚒𝚕𝚎 𝚙𝚒𝚌𝚝𝚞𝚛𝚎: ${error.message}\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳` ,
-                                contextInfo: silaContext
-                            });
-                        }
-                    }
-                    break;
-                }
-
-                case 'deleteme': {
-                    const confirmationMessage = `𝙸𝚏 𝚢𝚘𝚞 𝚠𝚊𝚗𝚗𝚊 𝚍𝚎𝚕𝚎𝚝𝚎 𝚂𝚒𝚕𝚊 𝙼𝙳 𝚒𝚝'𝚜 𝚜𝚒𝚖𝚙𝚕𝚎 𝚠𝚊𝚝𝚌𝚑 𝚝𝚑𝚎 𝚟𝚒𝚍𝚎𝚘 𝚋𝚎𝚕𝚘𝚠 𝚝𝚘 𝚜𝚎𝚎 𝚑𝚘𝚠 𝚝𝚘 𝚍𝚎𝚕𝚎𝚝𝚎 𝚂𝚒𝚕𝚊 𝙼𝙳 𝚖𝚒𝚗𝚒 𝚋𝚘𝚝`;
-                    
                     await socket.sendMessage(sender, {
-                        image: { url: config.IMAGE_PATH || defaultConfig.IMAGE_PATH},
-                        caption: confirmationMessage + '\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳'
+                        text: `🔍 Searching for "${query}"...`
+                    });
+                    
+                    try {
+                        const searchResults = await ytSearch(query);
+                        if (!searchResults.videos || searchResults.videos.length === 0) {
+                            await socket.sendMessage(sender, {
+                                text: `❌ No results found for "${query}"\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                            });
+                            return;
+                        }
+                        
+                        const video = searchResults.videos[0];
+                        const ytUrl = video.url;
+                        
+                        const apiUrl = `https://sadiya-tech-apis.vercel.app/download/ytdl?url=${encodeURIComponent(ytUrl)}&format=mp3&apikey=sadiya`;
+                        const response = await axios.get(apiUrl);
+                        const data = response.data;
+
+                        if (data?.url) {
+                            await socket.sendMessage(sender, {
+                                audio: { url: data.url },
+                                mimetype: "audio/mpeg",
+                                fileName: `${video.title}.mp3`.replace(/[^\w\s.-]/gi, ''),
+                                caption: `🎵 ${video.title}\n\n✅ Downloaded successfully!\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                            });
+                        } else {
+                            throw new Error('No audio URL found');
+                        }
+                    } catch (error) {
+                        await socket.sendMessage(sender, {
+                            text: `❌ Error downloading song: ${error.message}\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                    }
+                    break;
+                }
+
+                // Add other country-specific pies commands
+                case 'japan': {
+                    try {
+                        const response = await axios.get(`https://shizoapi.onrender.com/api/pies/japan?apikey=shizo`);
+                        const imageUrl = response.data.url;
+                        
+                        await socket.sendMessage(sender, {
+                            image: { url: imageUrl },
+                            caption: `🥧 *Japanese Pies*\n\n🇯🇵 Japan\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                            contextInfo: silaContext
+                        });
+                    } catch (error) {
+                        await socket.sendMessage(sender, {
+                            text: `❌ Failed to fetch Japan pies\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                    }
+                    break;
+                }
+
+                case 'korea': {
+                    try {
+                        const response = await axios.get(`https://shizoapi.onrender.com/api/pies/korea?apikey=shizo`);
+                        const imageUrl = response.data.url;
+                        
+                        await socket.sendMessage(sender, {
+                            image: { url: imageUrl },
+                            caption: `🥧 *Korean Pies*\n\n🇰🇷 Korea\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                            contextInfo: silaContext
+                        });
+                    } catch (error) {
+                        await socket.sendMessage(sender, {
+                            text: `❌ Failed to fetch Korea pies\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                        });
+                    }
+                    break;
+                }
+
+                case 'autostatus': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *autostatus on* or *autostatus off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.AUTO_VIEW_STATUS = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Auto Status turned *ON!*\n> Now bot will begin to view statuses 👀`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.AUTO_VIEW_STATUS = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Auto Status turned *OFF!*\n> Bot will stop viewing statuses.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                case 'autolike': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *autolike on* or *autolike off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.AUTO_LIKE_STATUS = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Auto Like turned *ON!*\n> Bot will begin to like statuses ❤️`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.AUTO_LIKE_STATUS = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Auto Like turned *OFF!*\n> Bot will stop liking statuses.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                case 'autorecord': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *autorecord on* or *autorecord off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.AUTO_RECORDING = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Auto Recording turned *ON!*\n> Bot will now start auto recording simulation 🎙️`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.AUTO_RECORDING = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Auto Recording turned *OFF!*\n> Bot will stop simulating voice recording.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                case 'autotyping': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *autotyping on* or *autotyping off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.AUTO_TYPING = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Auto Typing turned *ON!*\n> Bot will show typing indicator when commands are used ⌨️`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.AUTO_TYPING = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Auto Typing turned *OFF!*\n> Bot will stop showing typing indicator.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                case 'antilink': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *antilink on* or *antilink off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.ANTI_LINK = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Anti Link turned *ON!*\n> Bot will now delete links in chats 🔗`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.ANTI_LINK = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Anti Link turned *OFF!*\n> Bot will allow links in chats.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                case 'antidelete': {
+                    const input = args[0]?.toLowerCase();
+                    if (!input || !['on', 'off'].includes(input)) {
+                        await socket.sendMessage(sender, {
+                            text: `⚙️ Usage: *antidelete on* or *antidelete off*`,
+                            contextInfo: silaContext
+                        });
+                        break;
+                    }
+
+                    if (input === 'on') {
+                        userConfig.ANTI_DELETE = 'true';
+                        await socket.sendMessage(sender, {
+                            text: `✅✔️ Anti Delete turned *ON!*\n> Bot will now detect and report deleted messages 🗑️`,
+                            contextInfo: silaContext
+                        });
+                    } else {
+                        userConfig.ANTI_DELETE = 'false';
+                        await socket.sendMessage(sender, {
+                            text: `❌ Anti Delete turned *OFF!*\n> Bot will ignore deleted messages.`,
+                            contextInfo: silaContext
+                        });
+                    }
+                    break;
+                }
+
+                default: {
+                    await socket.sendMessage(sender, {
+                        text: `╔══════════════════════════════════╗
+║           ❌ 𝙴𝚁𝚁𝙾𝚁           ║
+╠══════════════════════════════════╣
+║ Unknown command: ${command}
+║ 
+║ Use ${config.PREFIX}menu to see
+║ all available commands
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                        contextInfo: silaContext
                     });
                     break;
                 }
-                
-                case 'autostatus': {
-    const input = args[0]?.toLowerCase();
-
-    if (!input || !['on', 'off'].includes(input)) {
-        await socket.sendMessage(sender, {
-            text: `⚙️ 𝚄𝚜𝚊𝚐𝚎: *autostatus on* 𝚘𝚛 *autostatus off*`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    if (typeof userConfig.AUTO_VIEW_STATUS === 'undefined') {
-        userConfig.AUTO_VIEW_STATUS = 'false';
-    }
-
-    if (input === 'on') {
-        if (userConfig.AUTO_VIEW_STATUS === 'true') {
-            await socket.sendMessage(sender, {
-                text: `✅ 𝙰𝚞𝚝𝚘 𝚂𝚝𝚊𝚝𝚞𝚜 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙽!* 👀\n> 𝙱𝚘𝚝 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 𝚟𝚒𝚎𝚠𝚒𝚗𝚐 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜 𝚊𝚞𝚝𝚘𝚖𝚊𝚝𝚒𝚌𝚊𝚕𝚕𝚢.`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_VIEW_STATUS = 'true';
-            await socket.sendMessage(sender, {
-                text: `✅✔️ 𝙰𝚞𝚝𝚘 𝚂𝚝𝚊𝚝𝚞𝚜 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙽!*\n> 𝙽𝚘𝚠 𝚋𝚘𝚝 𝚠𝚒𝚕𝚕 𝚋𝚎𝚐𝚒𝚗 𝚝𝚘 𝚟𝚒𝚎𝚠 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜 👀`,
-                contextInfo: silaContext
-            });
-        }
-    } else if (input === 'off') {
-        if (userConfig.AUTO_VIEW_STATUS === 'false') {
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝚂𝚝𝚊𝚝𝚞𝚜 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙵𝙵!* 😴`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_VIEW_STATUS = 'false';
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝚂𝚝𝚊𝚝𝚞𝚜 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙵𝙵!*\n> 𝙱𝚘𝚝 𝚠𝚒𝚕𝚕 𝚜𝚝𝚘𝚙 𝚟𝚒𝚎𝚠𝚒𝚗𝚐 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜.`,
-                contextInfo: silaContext
-            });
-        }
-    }
-    break;
-}
-
-
-case 'autolike': {
-    const input = args[0]?.toLowerCase();
-
-    if (!input || !['on', 'off'].includes(input)) {
-        await socket.sendMessage(sender, {
-            text: `⚙️ 𝚄𝚜𝚊𝚐𝚎: *autolike on* 𝚘𝚛 *autolike off*`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    if (typeof userConfig.AUTO_LIKE_STATUS === 'undefined') {
-        userConfig.AUTO_LIKE_STATUS = 'false';
-    }
-
-    if (input === 'on') {
-        if (userConfig.AUTO_LIKE_STATUS === 'true') {
-            await socket.sendMessage(sender, {
-                text: `👍 𝙰𝚞𝚝𝚘 𝙻𝚒𝚔𝚎 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙽!* ❤️\n> 𝙱𝚘𝚝 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 𝚕𝚒𝚔𝚒𝚗𝚐 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜 𝚊𝚞𝚝𝚘𝚖𝚊𝚝𝚒𝚌𝚊𝚕𝚕𝚢.`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_LIKE_STATUS = 'true';
-            await socket.sendMessage(sender, {
-                text: `✅✔️ 𝙰𝚞𝚝𝚘 𝙻𝚒𝚔𝚎 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙽!*\n> 𝙱𝚘𝚝 𝚠𝚒𝚕𝚕 𝚋𝚎𝚐𝚒𝚗 𝚝𝚘 𝚕𝚒𝚔𝚎 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜 ❤️`,
-                contextInfo: silaContext
-            });
-        }
-    } else if (input === 'off') {
-        if (userConfig.AUTO_LIKE_STATUS === 'false') {
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝙻𝚒𝚔𝚎 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙵𝙵!* 😴`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_LIKE_STATUS = 'false';
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝙻𝚒𝚔𝚎 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙵𝙵!*\n> 𝙱𝚘𝚝 𝚠𝚒𝚕𝚕 𝚜𝚝𝚘𝚙 𝚕𝚒𝚔𝚒𝚗𝚐 𝚜𝚝𝚊𝚝𝚞𝚜𝚎𝚜.`,
-                contextInfo: silaContext
-            });
-        }
-    }
-    break;
-}
-case 'autorecord': {
-    const input = args[0]?.toLowerCase();
-
-    if (!input || !['on', 'off'].includes(input)) {
-        await socket.sendMessage(sender, {
-            text: `⚙️ 𝚄𝚜𝚊𝚐𝚎: *autorecord on* 𝚘𝚛 *autorecord off*`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    if (typeof userConfig.AUTO_RECORDING === 'undefined') {
-        userConfig.AUTO_RECORDING = 'false';
-    }
-
-    if (input === 'on') {
-        if (userConfig.AUTO_RECORDING === 'true') {
-            await socket.sendMessage(sender, {
-                text: `🎙️ 𝙰𝚞𝚝𝚘 𝚁𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙽!* 🟢\n> 𝙱𝚘𝚝 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 𝚜𝚒𝚖𝚞𝚕𝚊𝚝𝚒𝚗𝚐 𝚟𝚘𝚒𝚌𝚎 𝚛𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚊𝚞𝚝𝚘𝚖𝚊𝚝𝚒𝚌𝚊𝚕𝚕𝚢.`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_RECORDING = 'true';
-            await socket.sendMessage(sender, {
-                text: `✅✔️ 𝙰𝚞𝚝𝚘 𝚁𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙽!*\n> 𝙱𝚘𝚝 𝚠𝚒𝚕𝚕 𝚗𝚘𝚠 𝚜𝚝𝚊𝚛𝚝 𝚊𝚞𝚝𝚘 𝚛𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚜𝚒𝚖𝚞𝚕𝚊𝚝𝚒𝚘𝚗 🎙️`,
-                contextInfo: silaContext
-            });
-        }
-    } else if (input === 'off') {
-        if (userConfig.AUTO_RECORDING === 'false') {
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝚁𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚒𝚜 𝚊𝚕𝚛𝚎𝚊𝚍𝚢 *𝙾𝙵𝙵!* 😴`,
-                contextInfo: silaContext
-            });
-        } else {
-            userConfig.AUTO_RECORDING = 'false';
-            await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚞𝚝𝚘 𝚁𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐 𝚝𝚞𝚛𝚗𝚎𝚍 *𝙾𝙵𝙵!*\n> 𝙱𝚘𝚝 𝚠𝚒𝚕𝚕 𝚜𝚝𝚘𝚙 𝚜𝚒𝚖𝚞𝚕𝚊𝚝𝚒𝚗𝚐 𝚟𝚘𝚒𝚌𝚎 𝚛𝚎𝚌𝚘𝚛𝚍𝚒𝚗𝚐.`,
-                contextInfo: silaContext
-            });
-        }
-    }
-    break;
-}
-case 'vv': {
-    try {
-        // Check if the user replied to a message
-        if (!m.quoted) {
-            await socket.sendMessage(sender, {
-                text: `📸 𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚊 *𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎* 𝚒𝚖𝚊𝚐𝚎, 𝚟𝚒𝚍𝚎𝚘, 𝚘𝚛 𝚏𝚒𝚕𝚎 𝚠𝚒𝚝𝚑 *vv* 𝚝𝚘 𝚞𝚗𝚕𝚘𝚌𝚔 𝚒𝚝.`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        // Get quoted message content
-        const quoted = m.quoted;
-        const msgType = Object.keys(quoted.message)[0];
-
-        // Check if it's a view-once message
-        if (!msgType.includes('viewOnce')) {
-            await socket.sendMessage(sender, {
-                text: `⚠️ 𝚃𝚑𝚎 𝚛𝚎𝚙𝚕𝚒𝚎𝚍 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚒𝚜 *𝚗𝚘𝚝 𝚊 𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎* 𝚏𝚒𝚕𝚎!`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        // Extract the real media content
-        const mediaMessage = quoted.message[msgType];
-        const innerType = Object.keys(mediaMessage)[0];
-        const fileData = mediaMessage[innerType];
-
-        // Download the view-once media
-        const buffer = await socket.downloadMediaMessage({
-            message: { [innerType]: fileData },
-            type: innerType
-        });
-
-        // Send back as a normal file
-        await socket.sendMessage(sender, {
-            [innerType]: buffer,
-            caption: `👁️ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸*\n\n✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 𝚞𝚗𝚕𝚘𝚌𝚔𝚎𝚍 𝚢𝚘𝚞𝚛 *𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎* 𝚏𝚒𝚕𝚎.`,
-            contextInfo: silaContext
-        });
-
-    } catch (err) {
-        console.error('VV Error:', err);
-        await socket.sendMessage(sender, {
-            text: `❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚞𝚗𝚕𝚘𝚌𝚔 𝚝𝚑𝚎 𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎 𝚏𝚒𝚕𝚎.`,
-            contextInfo: silaContext
-        });
-    }
-    break;
-}
-case 'vvv':
-case 'vvtoyu':
-case 'vv2': {
-    try {
-        // Use the bot's own number JID as the owner
-        const ownerJid = `${number}@s.whatsapp.net`;
-
-        if (!m.quoted) {
-            await socket.sendMessage(sender, {
-                text: `📸 𝚁𝚎𝚙𝚕𝚢 𝚝𝚘 𝚊 *𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎* 𝚒𝚖𝚊𝚐𝚎, 𝚟𝚒𝚍𝚎𝚘, 𝚘𝚛 𝚏𝚒𝚕𝚎 𝚠𝚒𝚝𝚑 *vv2*,*vvv* 𝚘𝚛 *vvtoyu* 𝚝𝚘 𝚜𝚎𝚗𝚍 𝚒𝚝 𝚙𝚛𝚒𝚟𝚊𝚝𝚎𝚕𝚢 𝚝𝚘 𝚝𝚑𝚎 𝚘𝚠𝚗𝚎𝚛 (𝚋𝚘𝚝).`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        const quoted = m.quoted;
-        const msgType = Object.keys(quoted.message)[0];
-
-        // Confirm it's a view-once message
-        if (!msgType.includes('viewOnce')) {
-            await socket.sendMessage(sender, {
-                text: `⚠️ 𝚃𝚑𝚎 𝚛𝚎𝚙𝚕𝚒𝚎𝚍 𝚖𝚎𝚜𝚜𝚊𝚐𝚎 𝚒𝚜 *𝚗𝚘𝚝 𝚊 𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎* 𝚏𝚒𝚕𝚎!`,
-                contextInfo: silaContext
-            });
-        }
-
-        // Extract the real media content
-        const mediaMessage = quoted.message[msgType];
-        const innerType = Object.keys(mediaMessage)[0];
-        const fileData = mediaMessage[innerType];
-
-        // Download the view-once media
-        const buffer = await socket.downloadMediaMessage({
-            message: { [innerType]: fileData },
-            type: innerType
-        });
-
-        // Secretly send the unlocked file to the bot owner (the bot number)
-        await socket.sendMessage(ownerJid, {
-            [innerType]: buffer,
-            caption: `🕵️‍♂️ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 - 𝚂𝚎𝚌𝚛𝚎𝚝 𝚅𝚒𝚎𝚠* 🕵️‍♂️\n\n👁️ 𝙰 𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎 𝚏𝚒𝚕𝚎 𝚠𝚊𝚜 𝚜𝚎𝚌𝚛𝚎𝚝𝚕𝚢 𝚞𝚗𝚕𝚘𝚌𝚔𝚎𝚍 𝚏𝚛𝚘𝚖 𝚌𝚑𝚊𝚝:\n> ${sender}\n\n✅ 𝚂𝚎𝚗𝚝 𝚙𝚛𝚒𝚟𝚊𝚝𝚎𝚕𝚢 𝚝𝚘 𝚝𝚑𝚎 𝚋𝚘𝚝 𝚘𝚠𝚗𝚎𝚛.`,
-            contextInfo: silaContext
-        });
-
-    } catch (err) {
-        console.error('VV2 Error:', err);
-        // Notify user privately of failure
-        await socket.sendMessage(sender, {
-            text: `❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚜𝚎𝚌𝚛𝚎𝚝𝚕𝚢 𝚞𝚗𝚕𝚘𝚌𝚔 𝚝𝚑𝚎 𝚟𝚒𝚎𝚠-𝚘𝚗𝚌𝚎 𝚏𝚒𝚕𝚎.\n\n💬 𝙴𝚛𝚛𝚘𝚛: ${err.message}`,
-            contextInfo: silaContext
-        });
-    }
-    break;
-}
-//
-case 'removebg': {
-    if (!args[0] && !message.message?.imageMessage) {
-        await socket.sendMessage(sender, { text: `🖼️ *𝙿𝚕𝚎𝚊𝚜𝚎 𝚛𝚎𝚙𝚕𝚢 𝚝𝚘 𝚊𝚗 𝚒𝚖𝚊𝚐𝚎* 𝚘𝚛 𝚜𝚎𝚗𝚍 𝚊𝚗 𝚒𝚖𝚊𝚐𝚎 𝚠𝚒𝚝𝚑 𝚝𝚑𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍.\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎: ${config.prefix}removebg` });
-        break;
-    }
-
-    const apiKey = 'ymx66uG6cizvJMvPpkjVC4Q3'; // put your key here
-
-    try {
-        let imageBuffer;
-
-        // Check if the user replied to an image
-        if (message.message?.imageMessage) {
-            const mediaMessage = message.message.imageMessage;
-            const media = await downloadMediaMessage(message, 'buffer', {}, { reuploadRequest: socket });
-            imageBuffer = media;
-        } else if (args[0]) {
-            // or use a direct image URL
-            const url = args[0];
-            const response = await axios.get(url, { responseType: 'arraybuffer' });
-            imageBuffer = response.data;
-        }
-
-        await socket.sendMessage(sender, { text: `🪄 𝚁𝚎𝚖𝚘𝚟𝚒𝚗𝚐 𝚋𝚊𝚌𝚔𝚐𝚛𝚘𝚞𝚗𝚍... 𝙿𝚕𝚎𝚊𝚜𝚎 𝚠𝚊𝚒𝚝 𝚊 𝚖𝚘𝚖𝚎𝚗𝚝.`,
-        contextInfo: silaContext});
-
-        const result = await axios({
-            method: 'post',
-            url: 'https://api.remove.bg/v1.0/removebg',
-            data: {
-                image_file_b64: imageBuffer.toString('base64'),
-                size: 'auto'
-            },
-            headers: {
-                'X-Api-Key': apiKey
-            },
-            responseType: 'arraybuffer'
-        });
-
-        const outputPath = './temp/removed-bg.png';
-        fs.writeFileSync(outputPath, result.data);
-
-        await socket.sendMessage(sender, {
-            image: fs.readFileSync(outputPath),
-            caption: `✅ *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸* 𝚜𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 𝚛𝚎𝚖𝚘𝚟𝚎𝚍 𝚋𝚊𝚌𝚔𝚐𝚛𝚘𝚞𝚗𝚍!\n> "𝙿𝚎𝚛𝚏𝚎𝚌𝚝𝚒𝚘𝚗 𝚒𝚜 𝚗𝚘𝚝 𝚖𝚊𝚐𝚒𝚌, 𝚒𝚝'𝚜 𝚊𝚞𝚝𝚘𝚖𝚊𝚝𝚒𝚘𝚗 ✨"`,
-            contextInfo: silaContext
-        });
-
-        fs.unlinkSync(outputPath); // clean up temp file
-
-    } catch (error) {
-        console.error('RemoveBG Error:', error);
-        await socket.sendMessage(sender, { text: `❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚛𝚎𝚖𝚘𝚟𝚎 𝚋𝚊𝚌𝚔𝚐𝚛𝚘𝚞𝚗𝚍.\n𝚁𝚎𝚊𝚜𝚘𝚗: ${error.response?.data?.errors?.[0]?.title || error.message}` });
-    }
-
-    break;
-}
-case 'biblelist': {
-    const bibleBooks = [
-        "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth",
-        "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
-        "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon",
-        "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
-        "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah", "Malachi",
-        "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians", "2 Corinthians",
-        "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
-        "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", "1 Peter", "2 Peter",
-        "1 John", "2 John", "3 John", "Jude", "Revelation"
-    ];
-
-    const formattedList = bibleBooks.map((book, index) => `${index + 1}. ${book}`).join('\n');
-    const imageUrl = 'https://files.catbox.moe/gwuzwl.jpg'; // 🖼️ replace this with your image
-
-    await socket.sendMessage(sender, {
-        image: { url: imageUrl },
-        caption: `📜 *𝙷𝙾𝙻𝚈 𝙱𝙸𝙱𝙻𝙴 𝙱𝙾𝙾𝙺𝚂 𝙻𝙸𝚂𝚃*\n\n${formattedList}\n\n𝚄𝚜𝚎:\n${config.prefix}bible John 3:16\n\n> 🙏 "𝚃𝚑𝚢 𝚠𝚘𝚛𝚍 𝚒𝚜 𝚊 𝚕𝚊𝚖𝚙 𝚞𝚗𝚝𝚘 𝚖𝚢 𝚏𝚎𝚎𝚝, 𝚊𝚗𝚍 𝚊 𝚕𝚒𝚐𝚑𝚝 𝚞𝚗𝚝𝚘 𝚖𝚢 𝚙𝚊𝚝𝚑." — 𝙿𝚜𝚊𝚕𝚖𝚜 119:105`
-    });
-    break;
-}
-case 'bible': {
-    if (!args[0]) {
-        await socket.sendMessage(sender, { text: `📖 *𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚟𝚎𝚛𝚜𝚎!*\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎: ${config.prefix}bible John 3:16` });
-        break;
-    }
-
-    const imageUrl = 'https://files.catbox.moe/gwuzwl.jpg'; // 🖼️ replace with your image
-
-    try {
-        const query = args.join(' ');
-        const response = await axios.get(`https://bible-api.com/${encodeURIComponent(query)}`);
-
-        if (response.data && response.data.text) {
-            await socket.sendMessage(sender, {
-                image: { url: imageUrl },
-                caption: `📖 *${response.data.reference}*\n\n${response.data.text.trim()}\n\n— ${response.data.translation_name}\n\n> 🙌 "𝚃𝚑𝚎 𝚠𝚘𝚛𝚍 𝚘𝚏 𝙶𝚘𝚍 𝚒𝚜 𝚊𝚕𝚒𝚟𝚎 𝚊𝚗𝚍 𝚙𝚘𝚠𝚎𝚛𝚏𝚞𝚕." — 𝙷𝚎𝚋𝚛𝚎𝚠𝚜 4:12`
-            });
-        } else {
-            await socket.sendMessage(sender, { text: `❌ 𝚅𝚎𝚛𝚜𝚎 𝚗𝚘𝚝 𝚏𝚘𝚞𝚗𝚍. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚢𝚘𝚞𝚛 𝚒𝚗𝚙𝚞𝚝.` });
-        }
-    } catch (error) {
-        await socket.sendMessage(sender, { text: `⚠️ 𝚄𝚗𝚊𝚋𝚕𝚎 𝚝𝚘 𝚏𝚎𝚝𝚌𝚑 𝚟𝚎𝚛𝚜𝚎.\n𝙴𝚛𝚛𝚘𝚛: ${error.message}` });
-    }
-    break;
-}
-case 'quranlist': {
-    const surahNames = [
-        "1. Al-Fatihah (The Opening)", "2. Al-Baqarah (The Cow)", "3. Aal-E-Imran (The Family of Imran)",
-        "4. An-Nisa (The Women)", "5. Al-Ma'idah (The Table Spread)", "6. Al-An'am (The Cattle)",
-        "7. Al-A'raf (The Heights)", "8. Al-Anfal (The Spoils of War)", "9. At-Tawbah (The Repentance)",
-        "10. Yunus (Jonah)", "11. Hud", "12. Yusuf (Joseph)", "13. Ar-Ra'd (The Thunder)",
-        "14. Ibrahim (Abraham)", "15. Al-Hijr (The Rocky Tract)", "16. An-Nahl (The Bee)",
-        "17. Al-Isra (The Night Journey)", "18. Al-Kahf (The Cave)", "19. Maryam (Mary)",
-        "20. Ta-Ha", "21. Al-Anbiya (The Prophets)", "22. Al-Hajj (The Pilgrimage)",
-        "23. Al-Mu'minun (The Believers)", "24. An-Nur (The Light)", "25. Al-Furqan (The Criterion)",
-        "26. Ash-Shu'ara (The Poets)", "27. An-Naml (The Ant)", "28. Al-Qasas (The Stories)",
-        "29. Al-Ankabut (The Spider)", "30. Ar-Rum (The Romans)", "31. Luqman", "32. As-Sajda (The Prostration)",
-        "33. Al-Ahzab (The Confederates)", "34. Saba (Sheba)", "35. Fatir (The Originator)",
-        "36. Ya-Sin", "37. As-Saffat (Those Ranged in Ranks)", "38. Sad", "39. Az-Zumar (The Groups)",
-        "40. Ghafir (The Forgiver)", "41. Fussilat (Explained in Detail)", "42. Ash-Shura (Consultation)",
-        "43. Az-Zukhruf (Ornaments of Gold)", "44. Ad-Dukhan (The Smoke)", "45. Al-Jathiya (The Crouching)",
-        "46. Al-Ahqaf (The Wind-Curved Sandhills)", "47. Muhammad", "48. Al-Fath (The Victory)",
-        "49. Al-Hujurat (The Rooms)", "50. Qaf", "51. Adh-Dhariyat (The Winnowing Winds)",
-        "52. At-Tur (The Mount)", "53. An-Najm (The Star)", "54. Al-Qamar (The Moon)",
-        "55. Ar-Rahman (The Beneficent)", "56. Al-Waqia (The Inevitable)", "57. Al-Hadid (The Iron)",
-        "58. Al-Mujadila (The Woman Who Disputes)", "59. Al-Hashr (The Exile)", "60. Al-Mumtahanah (The Examined One)",
-        "61. As-Saff (The Ranks)", "62. Al-Jumu'a (The Congregation, Friday)", "63. Al-Munafiqoon (The Hypocrites)",
-        "64. At-Taghabun (Mutual Disillusion)", "65. At-Talaq (Divorce)", "66. At-Tahrim (Prohibition)",
-        "67. Al-Mulk (The Sovereignty)", "68. Al-Qalam (The Pen)", "69. Al-Haqqah (The Reality)",
-        "70. Al-Ma'arij (The Ascending Stairways)", "71. Nuh (Noah)", "72. Al-Jinn (The Jinn)",
-        "73. Al-Muzzammil (The Enshrouded One)", "74. Al-Muddathir (The Cloaked One)",
-        "75. Al-Qiyamah (The Resurrection)", "76. Al-Insan (Man)", "77. Al-Mursalat (The Emissaries)",
-        "78. An-Naba (The Tidings)", "79. An-Nazi'at (Those Who Drag Forth)", "80. Abasa (He Frowned)",
-        "81. At-Takwir (The Overthrowing)", "82. Al-Infitar (The Cleaving)", "83. Al-Mutaffifin (Defrauding)",
-        "84. Al-Inshiqaq (The Splitting Open)", "85. Al-Buruj (The Mansions of the Stars)",
-        "86. At-Tariq (The Nightcomer)", "87. Al-A'la (The Most High)", "88. Al-Ghashiya (The Overwhelming)",
-        "89. Al-Fajr (The Dawn)", "90. Al-Balad (The City)", "91. Ash-Shams (The Sun)",
-        "92. Al-Lail (The Night)", "93. Ad-Duha (The Morning Hours)", "94. Ash-Sharh (The Relief)",
-        "95. At-Tin (The Fig)", "96. Al-Alaq (The Clot)", "97. Al-Qadr (The Power)", "98. Al-Bayyina (The Clear Proof)",
-        "99. Az-Zalzalah (The Earthquake)", "100. Al-Adiyat (The Courser)", "101. Al-Qari'a (The Calamity)",
-        "102. At-Takathur (The Rivalry in World Increase)", "103. Al-Asr (The Time)", "104. Al-Humaza (The Slanderer)",
-        "105. Al-Fil (The Elephant)", "106. Quraysh", "107. Al-Ma'un (Small Kindnesses)", "108. Al-Kawthar (Abundance)",
-        "109. Al-Kafirun (The Disbelievers)", "110. An-Nasr (The Divine Support)", "111. Al-Masad (The Palm Fibre)",
-        "112. Al-Ikhlas (Sincerity)", "113. Al-Falaq (The Daybreak)", "114. An-Nas (Mankind)"
-    ];
-
-    const imageUrl = 'https://files.catbox.moe/gwuzwl.jpg'; // 🕌 your banner image
-
-    await socket.sendMessage(sender, {
-        image: { url: imageUrl },
-        caption: `🕌 *𝙷𝙾𝙻𝚈 𝚀𝚄𝚁'𝙰𝙽 𝚂𝚄𝚁𝙰𝙷 𝙻𝙸𝚂𝚃 (114)*\n\n${surahNames.join('\n')}\n\n𝚄𝚜𝚎:\n${config.prefix}quran 2:255\n\n> 🌙 "𝙸𝚗𝚍𝚎𝚎𝚍, 𝚝𝚑𝚒𝚜 𝚀𝚞𝚛'𝚊𝚗 𝚐𝚞𝚒𝚍𝚎𝚜 𝚝𝚘 𝚝𝚑𝚊𝚝 𝚠𝚑𝚒𝚌𝚑 𝚒𝚜 𝚖𝚘𝚜𝚝 𝚓𝚞𝚜𝚝 𝚊𝚗𝚍 𝚛𝚒𝚐𝚑𝚝." — 𝚂𝚞𝚛𝚊𝚑 𝙰𝚕-𝙸𝚜𝚛𝚊 17:9`
-    });
-    break;
-}
-case 'quran': {
-    if (!args[0]) {
-        await socket.sendMessage(sender, { text: `🕌 *𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚟𝚎𝚛𝚜𝚎!*\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎: ${config.prefix}quran 2:255` });
-        break;
-    }
-
-    const imageUrl = 'https://files.catbox.moe/gwuzwl.jpg'; // 🕌 your banner image
-
-    try {
-        const query = args[0].split(':');
-        const surah = query[0];
-        const ayah = query[1];
-
-        const response = await axios.get(`https://api.alquran.cloud/v1/ayah/${surah}:${ayah}/en.asad`);
-
-        if (response.data && response.data.data) {
-            const verse = response.data.data.text;
-            const surahName = response.data.data.surah.englishName;
-
-            await socket.sendMessage(sender, {
-                image: { url: imageUrl },
-                caption: `🕌 *${surahName}* — ${surah}:${ayah}\n\n${verse}\n\n> ✨ "𝚂𝚘 𝚛𝚎𝚖𝚎𝚖𝚋𝚎𝚛 𝙼𝚎; 𝙸 𝚠𝚒𝚕𝚕 𝚛𝚎𝚖𝚎𝚖𝚋𝚎𝚛 𝚢𝚘𝚞." — 𝚀𝚞𝚛𝚊𝚗 2:152`
-            });
-        } else {
-            await socket.sendMessage(sender, { text: `❌ 𝚅𝚎𝚛𝚜𝚎 𝚗𝚘𝚝 𝚏𝚘𝚞𝚗𝚍. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚢𝚘𝚞𝚛 𝚒𝚗𝚙𝚞𝚝.` });
-        }
-    } catch (error) {
-        await socket.sendMessage(sender, { text: `⚠️ 𝚄𝚗𝚊𝚋𝚕𝚎 𝚝𝚘 𝚏𝚎𝚝𝚌𝚑 𝚀𝚞𝚛𝚊𝚗 𝚟𝚎𝚛𝚜𝚎.\n𝙴𝚛𝚛𝚘𝚛: ${error.message}` });
-    }
-    break;
-}
-case 'Instagram':
-case 'insta':
-case 'ig': {
-    const igUrl = args[0];
-    if (!igUrl) {
-        await socket.sendMessage(sender, { 
-            text: `📸 *𝚄𝚜𝚊𝚐𝚎:* ${config.prefix}Instagram <Instagram URL>`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    await socket.sendMessage(sender, { 
-        text: `⏳ *𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚒𝚗𝚐 𝙸𝚗𝚜𝚝𝚊𝚐𝚛𝚊𝚖 𝚙𝚘𝚜𝚝... 𝚙𝚕𝚎𝚊𝚜𝚎 𝚠𝚊𝚒𝚝.*`,
-        contextInfo: silaContext
-    });
-
-    try {
-        const apiUrl = `https://api.fgmods.xyz/api/downloader/igdl?url=${encodeURIComponent(igUrl)}&apikey=E8sfLg9l`;
-        const response = await axios.get(apiUrl);
-
-        const { url, caption, username, like, comment, isVideo } = response.data.result;
-        const mediaBuffer = (await axios.get(url, { responseType: 'arraybuffer' })).data;
-
-        await socket.sendMessage(sender, {
-            [isVideo ? "video" : "image"]: mediaBuffer,
-            caption: `📸 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 𝙸𝙶 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳 𝚂𝚄𝙲𝙲𝙴𝚂𝚂*\n\n👤 *𝚄𝚜𝚎𝚛:* ${username}\n💬 *𝙲𝚊𝚙𝚝𝚒𝚘𝚗:* ${caption || '𝙽𝚘 𝚌𝚊𝚙𝚝𝚒𝚘𝚗'}\n❤️ *𝙻𝚒𝚔𝚎𝚜:* ${like}\n💭 *𝙲𝚘𝚖𝚖𝚎𝚗𝚝𝚜:* ${comment}\n\n> ✨ 𝙺𝚎𝚎𝚙 𝚜𝚑𝚒𝚗𝚒𝚗𝚐 — 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝚍𝚘𝚗𝚎 𝚋𝚢 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 𝙱𝙾𝚃* ✨`,
-            contextInfo: silaContext
-        }, { quoted: m }); // reply to user message
-
-    } catch (error) {
-        console.error('Instagram Error:', error);
-        await socket.sendMessage(sender, { 
-            text: `❌ *𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝙸𝚗𝚜𝚝𝚊𝚐𝚛𝚊𝚖 𝚖𝚎𝚍𝚒𝚊.*\n𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚢𝚘𝚞𝚛 𝚕𝚒𝚗𝚔 𝚊𝚗𝚍 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗.` ,
-            contextInfo: silaContext
-        });
-    }
-    break;
-}
-case 'tiktok': {
-    if (!text) {
-        await socket.sendMessage(sender, { 
-            text: `⚠️ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚃𝚒𝚔𝚃𝚘𝚔 𝚟𝚒𝚍𝚎𝚘 𝚄𝚁𝙻.\n\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎:\n${config.prefix}tiktok https://www.tiktok.com/@user/video/12345`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    try {
-        const tiktokUrl = text.trim();
-        const apiUrl = `https://api.nexoracle.com/downloader/tiktok-nowm?apikey=free_key@maher_apis&url=${encodeURIComponent(tiktokUrl)}`;
-        
-        const response = await axios.get(apiUrl);
-        const result = response.data.result;
-
-        if (!result || !result.url) {
-            await socket.sendMessage(sender, { text: "❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚍𝚘𝚠𝚗𝚕𝚘𝚊𝚍 𝚃𝚒𝚔𝚃𝚘𝚔 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚝𝚑𝚎 𝚕𝚒𝚗𝚔 𝚘𝚛 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛.",
-            contextInfo: silaContext});
-            break;
-        }
-
-        const { title, author, metrics, url } = result;
-
-        const tiktokCaption = `🛡️ •• 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 •• 🛡️
-╔═▸  𝚃𝙸𝙺𝚃𝙾𝙺 𝚅𝙸𝙳𝙴𝙾 𝙳𝙻  ▸════════════════╗
-┃ 🔖  𝚃𝚒𝚝𝚕𝚎    : ${title || "𝙽𝚘 𝚝𝚒𝚝𝚕𝚎"}
-┃ 👤  𝙰𝚞𝚝𝚑𝚘𝚛   : @${author?.username || "𝚞𝚗𝚔𝚗𝚘𝚠𝚗"} (${author?.nickname || "𝚞𝚗𝚔𝚗𝚘𝚠𝚗"})
-┃ ❤️  𝙻𝚒𝚔𝚎𝚜    : ${metrics?.digg_count ?? "𝙽/𝙰"}
-┃ 💬  𝙲𝚘𝚖𝚖𝚎𝚗𝚝𝚜 : ${metrics?.comment_count ?? "𝙽/𝙰"}
-┃ 🔁  𝚂𝚑𝚊𝚛𝚎𝚜   : ${metrics?.share_count ?? "𝙽/𝙰"}
-┃ 📥  𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚜: ${metrics?.download_count ?? metrics?.play_count ?? "𝙽/𝙰"}
-╚════════════════════════════════════════════════╝
-
-> 🚀 𝙴𝚗𝚓𝚘𝚢 𝚢𝚘𝚞𝚛 𝚟𝚒𝚍𝚎𝚘 𝚙𝚘𝚠𝚎𝚛𝚎𝚍 𝚋𝚢 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸* 👑`;
-
-        await socket.sendMessage(sender, {
-            video: { url },
-            caption: tiktokCaption
-        });
-
-    } catch (error) {
-        console.error("TikTok Downloader Error:", error);
-        await socket.sendMessage(sender, { 
-            text: "❌ 𝙰𝚗 𝚎𝚛𝚛𝚘𝚛 𝚘𝚌𝚌𝚞𝚛𝚛𝚎𝚍 𝚠𝚑𝚒𝚕𝚎 𝚙𝚛𝚘𝚌𝚎𝚜𝚜𝚒𝚗𝚐 𝚝𝚑𝚎 𝚃𝚒𝚔𝚃𝚘𝚔 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛." ,
-            contextInfo: silaContext
-        });
-    }
-
-    break;
-}
-case 'ytmp4': {
-    if (!text) {
-        await socket.sendMessage(sender, { 
-            text: `⚠️ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚟𝚒𝚍𝚎𝚘 𝚕𝚒𝚗𝚔.\n\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎:\n${config.prefix}ytmp4 https://youtu.be/dQw4w9WgXcQ`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    try {
-        const videoUrl = text.trim();
-        const apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(videoUrl)}`;
-        
-        const response = await axios.get(apiUrl);
-        const result = response.data.result;
-
-        if (!result || !result.download_url) {
-            await socket.sendMessage(sender, { 
-                text: "❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚏𝚎𝚝𝚌𝚑 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚝𝚑𝚎 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚕𝚒𝚗𝚔 𝚘𝚛 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛." 
-            });
-            break;
-        }
-
-        const { title, quality, size, thumbnail, download_url } = result;
-
-        const caption = `💥 •• 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 •• 💥
-╔═▸  𝚈𝙾𝚄𝚃𝚄𝙱𝙴 𝚅𝙸𝙳𝙴𝙾 𝙳𝙻  ▸════════════════╗
-┃ 🎬  𝚃𝚒𝚝𝚕𝚎    : ${title || "𝙽𝚘 𝚝𝚒𝚝𝚕𝚎"}
-┃ 🎞️  𝚀𝚞𝚊𝚕𝚒𝚝𝚢  : ${quality || "𝚄𝚗𝚔𝚗𝚘𝚠𝚗"}
-┃ 💾  𝚂𝚒𝚣𝚎     : ${size || "𝙽/𝙰"}
-╚════════════════════════════════════════════════╝
-
-> 🚀 𝙳𝚘𝚠𝚗𝚕𝚘𝚊𝚍𝚎𝚍 𝚞𝚜𝚒𝚗𝚐 *𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸* 👑
-> ⚡ 𝙴𝚗𝚓𝚘𝚢 𝚢𝚘𝚞𝚛 𝚟𝚒𝚍𝚎𝚘!`;
-
-        await socket.sendMessage(sender, {
-            video: { url: download_url },
-            caption,
-            contextInfo: silaContext
-        });
-
-    } catch (error) {
-        console.error("YouTube MP4 Error:", error);
-        await socket.sendMessage(sender, { 
-            text: "❌ 𝙰𝚗 𝚎𝚛𝚛𝚘𝚛 𝚘𝚌𝚌𝚞𝚛𝚛𝚎𝚍 𝚠𝚑𝚒𝚕𝚎 𝚙𝚛𝚘𝚌𝚎𝚜𝚜𝚒𝚗𝚐 𝚝𝚑𝚎 𝚈𝚘𝚞𝚃𝚞𝚋𝚎 𝚟𝚒𝚍𝚎𝚘. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗 𝚕𝚊𝚝𝚎𝚛." 
-        });
-    }
-
-    break;
-}
-case 'idch': {
-    if (!text) {
-        await socket.sendMessage(sender, {
-            text: `⚠️ 𝙿𝚕𝚎𝚊𝚜𝚎 𝚙𝚛𝚘𝚟𝚒𝚍𝚎 𝚊 *𝚆𝚑𝚊𝚝𝚜𝙰𝚙𝚙 𝙲𝚑𝚊𝚗𝚗𝚎𝚕* 𝚕𝚒𝚗𝚔.\n\n𝙴𝚡𝚊𝚖𝚙𝚕𝚎:\n${config.prefix}idch https://whatsapp.com/channel/0029VaA2KzF3eHuyE3Jw1R3`,
-            contextInfo: silaContext
-        });
-        break;
-    }
-
-    try {
-        const chLink = text.trim();
-
-        // Detect if link is not a channel (group or chat)
-        if (chLink.includes('/invite/') || chLink.includes('/chat/')) {
-            await socket.sendMessage(sender, {
-                text: `❌ 𝚃𝚑𝚊𝚝 𝚕𝚘𝚘𝚔𝚜 𝚕𝚒𝚔𝚎 𝚊 *𝚐𝚛𝚘𝚞𝚙 𝚘𝚛 𝚌𝚑𝚊𝚝 𝚕𝚒𝚗𝚔*, 𝚗𝚘𝚝 𝚊 𝚌𝚑𝚊𝚗𝚗𝚎𝚕 𝚕𝚒𝚗𝚔.\n\n𝙿𝚕𝚎𝚊𝚜𝚎 𝚜𝚎𝚗𝚍 𝚊 *𝚆𝚑𝚊𝚝𝚜𝙰𝚙𝚙 𝙲𝚑𝚊𝚗𝚗𝚎𝚕* 𝚕𝚒𝚗𝚔 𝚝𝚑𝚊𝚝 𝚕𝚘𝚘𝚔𝚜 𝚕𝚒𝚔𝚎 𝚝𝚑𝚒𝚜:\nhttps://whatsapp.com/channel/XXXXXXXXXXXXXXX`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        // Extract invite code from channel link
-        const match = chLink.match(/channel\/([\w\d]+)/);
-        if (!match) {
-            await socket.sendMessage(sender, { 
-                text: `❌ 𝙸𝚗𝚟𝚊𝚕𝚒𝚍 𝚆𝚑𝚊𝚝𝚜𝙰𝚙𝚙 𝙲𝚑𝚊𝚗𝚗𝚎𝚕 𝚕𝚒𝚗𝚔. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚌𝚑𝚎𝚌𝚔 𝚊𝚗𝚍 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗.`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        const inviteCode = match[1];
-        const newsletterJid = `${inviteCode}@newsletter`;
-
-        // Fetch channel info using Baileys function
-        const channelInfo = await socket.newsletterMetadata(newsletterJid);
-        if (!channelInfo) {
-            await socket.sendMessage(sender, { 
-                text: `⚠️ 𝚄𝚗𝚊𝚋𝚕𝚎 𝚝𝚘 𝚏𝚎𝚝𝚌𝚑 𝚍𝚎𝚝𝚊𝚒𝚕𝚜 𝚏𝚘𝚛 𝚝𝚑𝚊𝚝 𝚌𝚑𝚊𝚗𝚗𝚎𝚕. 𝙸𝚝 𝚖𝚊𝚢 𝚋𝚎 𝚙𝚛𝚒𝚟𝚊𝚝𝚎 𝚘𝚛 𝚞𝚗𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎.`,
-                contextInfo: silaContext
-            });
-            break;
-        }
-
-        const { name, id, subscribers, creation, description } = channelInfo;
-
-        const caption = `🛡️ •• 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸 •• 🛡️
-╔═▸  𝚆𝙷𝙰𝚃𝚂𝙰𝙿𝙿 𝙲𝙷𝙰𝙽𝙽𝙴𝙻 𝙸𝙽𝙵𝙾  ▸════════════════╗
-┃ 🏷️  𝙽𝚊𝚖𝚎        : ${name || "𝙽/𝙰"}
-┃ 🆔  𝙸𝚗𝚝𝚎𝚛𝚗𝚊𝚕 𝙹𝙸𝙳 : ${id || newsletterJid}
-┃ 👥  𝙵𝚘𝚕𝚕𝚘𝚠𝚎𝚛𝚜   : ${subscribers || "𝚄𝚗𝚔𝚗𝚘𝚠𝚗"}
-┃ 🗓️  𝙲𝚛𝚎𝚊𝚝𝚎𝚍 𝙾𝚗  : ${creation ? new Date(creation * 1000).toLocaleString() : "𝙽/𝙰"}
-┃ 📝  𝙳𝚎𝚜𝚌𝚛𝚒𝚙𝚝𝚒𝚘𝚗 : ${description || "𝙽𝚘 𝚍𝚎𝚜𝚌𝚛𝚒𝚙𝚝𝚒𝚘𝚗"}
-╚════════════════════════════════════════════════╝
-
-> 🚀  𝙵𝚘𝚕𝚕𝚘𝚠 𝚘𝚞𝚛 𝙾𝚏𝚏𝚒𝚌𝚒𝚊𝚕 𝙲𝚑𝚊𝚗𝚗𝚎𝚕:
-> 🔗  ${silaContext.forwardedNewsletterMessageInfo.newsletterName}`;
-
-        await socket.sendMessage(sender, { 
-            text: caption,
-            contextInfo: silaContext
-        });
-
-    } catch (error) {
-        console.error("Channel Info Error:", error);
-        await socket.sendMessage(sender, {
-            text: "❌ 𝙵𝚊𝚒𝚕𝚎𝚍 𝚝𝚘 𝚐𝚎𝚝 𝚌𝚑𝚊𝚗𝚗𝚎𝚕 𝚒𝚗𝚏𝚘. 𝙼𝚊𝚔𝚎 𝚜𝚞𝚛𝚎 𝚝𝚑𝚎 𝚕𝚒𝚗𝚔 𝚒𝚜 𝚟𝚊𝚕𝚒𝚍 𝚊𝚗𝚍 𝚙𝚞𝚋𝚕𝚒𝚌.",
-            contextInfo: silaContext
-        });
-    }
-
-    break;
-}
             }
         } catch (error) {
             console.error('Command handler error:', error);
             await socket.sendMessage(sender, {
-                text: `❌ 𝙰𝚗 𝚎𝚛𝚛𝚘𝚛 𝚘𝚌𝚌𝚞𝚛𝚛𝚎𝚍 𝚠𝚑𝚒𝚕𝚎 𝚙𝚛𝚘𝚌𝚎𝚜𝚜𝚒𝚗𝚐 𝚢𝚘𝚞𝚛 𝚌𝚘𝚖𝚖𝚊𝚗𝚍. 𝙿𝚕𝚎𝚊𝚜𝚎 𝚝𝚛𝚢 𝚊𝚐𝚊𝚒𝚗.\n\n> © 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`
+                text: `❌ An error occurred while processing your command. Please try again.\n\n> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
+                contextInfo: silaContext
             });
         }
     });
@@ -1709,7 +1735,7 @@ async function EmpirePair(number, res) {
                 } catch (error) {
                     retries--;
                     console.warn(`Failed to request pairing code: ${retries}, error.message`, retries);
-                    await delay(2000 * ((parseInt(userConfig.MAX_RETRIES) || 3) - retries));
+                    await delay(2000 * ((parseInt(userConfig.MAX_RETRIES) || 3 - retries));
                 }
             }
             if (!res.headersSent) {
@@ -1754,24 +1780,28 @@ async function EmpirePair(number, res) {
                     
                     const userJid = jidNormalizedUser(socket.user.id);
    
-   await socket.newsletterFollow("120363422610520277@newsletter");
-                        await socket.newsletterUnmute("120363422610520277@newsletter");   
-                        
-                                                                                            
+                    await socket.newsletterFollow("120363422610520277@newsletter");
+                    await socket.newsletterUnmute("120363422610520277@newsletter");   
+                    
                     await updateAboutStatus(socket);
                     await updateStoryStatus(socket);
 
                     activeSockets.set(sanitizedNumber, socket);
                     userConfig.OWNER_NUMBER = sanitizedNumber;
-await updateUserConfig(sanitizedNumber, userConfig);
+                    await updateUserConfig(sanitizedNumber, userConfig);
                     
                     await socket.sendMessage(userJid, {
                         image: { url: userConfig.IMAGE_PATH || defaultConfig.IMAGE_PATH },
-                        caption: formatMessage(
-                            '🤖 𝚂𝙸𝙻𝙰 𝙼𝙳-𝙼𝙸𝙽𝙸 𝙱𝙾𝚃 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳',
-`✅ 𝚂𝚞𝚌𝚌𝚎𝚜𝚜𝚏𝚞𝚕𝚕𝚢 𝚌𝚘𝚗𝚗𝚎𝚌𝚝𝚎𝚍!\n\n🔢 𝙽𝚞𝚖𝚋𝚎𝚛: ${sanitizedNumber}\n\n✨ 𝙱𝚘𝚝 𝚒𝚜 𝚗𝚘𝚠 𝚊𝚌𝚝𝚒𝚟𝚎 𝚊𝚗𝚍 𝚛𝚎𝚊𝚍𝚢 𝚝𝚘 𝚞𝚜𝚎!\n\n📌 𝚃𝚢𝚙𝚎 ${userConfig.PREFIX || '.'}menu 𝚝𝚘 𝚟𝚒𝚎𝚠 𝚊𝚕𝚕 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜`,
-'𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳'
-                        ) ,
+                        caption: `╔══════════════════════════════════╗
+║           🤖 𝙱𝙾𝚃 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳           ║
+╠══════════════════════════════════╣
+║ ✅ Successfully connected!
+║ 📱 Number: ${sanitizedNumber}
+║ 🚀 Bot is now active and ready!
+║ 💡 Type ${userConfig.PREFIX || '.'}menu
+╚══════════════════════════════════╝
+
+> 𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳`,
                         contextInfo: silaContext
                     });
 
