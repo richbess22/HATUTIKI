@@ -92,7 +92,7 @@ const autoReplies = {
     'vip': '𝙷𝚎𝚕𝚕𝚘 𝚅𝙸𝙿! 👑 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚊𝚜𝚜𝚒𝚜𝚝 𝚢𝚘𝚞?',
     'mkuu': '𝙷𝚎𝚢 𝚖𝚔𝚞𝚞! 👋 𝙽𝚒𝚔𝚞𝚜𝚊𝚒𝚍𝚒𝚎 𝙺𝚞𝚑𝚞𝚜𝚞?',
     'boss': '𝚈𝚎𝚜 𝚋𝚘𝚜𝚜! 👑 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚑𝚎𝚕𝚙 𝚢𝚘𝚞?',
-    'habari': '𝙽𝚣𝚞𝚛𝚒 𝚜𝚊𝚗𝚊! 👋 𝙷𝚊𝚋𝚊𝚛𝚒 𝚢𝚊𝚔𝚘?',
+    'habari': '𝙽𝚣𝚞𝚛𝚞 𝚜𝚊𝚗𝚊! 👋 𝙷𝚊𝚋𝚊𝚛𝚒 𝚢𝚊𝚔𝚘?',
     'hello': '𝙷𝚒 𝚝𝚑𝚎𝚛𝚎! 😊 𝚄𝚜𝚎 .𝚖𝚎𝚗𝚞 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚊𝚟𝚊𝚒𝚕𝚊𝚋𝚕𝚎 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜.',
     'bot': '𝚈𝚎𝚜, 𝙸 𝚊𝚖 𝚂𝙸𝙻𝙰 𝙼𝙳 𝙼𝙸𝙽𝙸! 🤖 𝙷𝚘𝚠 𝚌𝚊𝚗 𝙸 𝚊𝚜𝚜𝚒𝚜𝚝 𝚢𝚘𝚞?',
     'menu': '𝚃𝚢𝚙𝚎 .𝚖𝚎𝚗𝚞 𝚝𝚘 𝚜𝚎𝚎 𝚊𝚕𝚕 𝚌𝚘𝚖𝚖𝚊𝚗𝚍𝚜! 📜',
@@ -757,34 +757,86 @@ function setupSocketHandlers(socket, number, userConfig) {
     setupAutoBioHandler(socket, userConfig);
 }
 
-// [REST OF THE CODE REMAINS THE SAME - Memory optimization, caching, pairing process, etc.]
-// ... (The rest of the file remains unchanged from the previous version)
+// Function to update user configuration
+async function updateUserConfig(number, config) {
+    try {
+        const configPath = path.join(SESSION_BASE_PATH, `config_${number}.json`);
+        await fs.writeJson(configPath, config, { spaces: 2 });
+    } catch (error) {
+        console.error('Failed to update user config:', error);
+    }
+}
 
-// Update the EmpirePair function to include auto-join groups
-socket.ev.on('connection.update', async (update) => {
-    const { connection } = update;
-    if (connection === 'open') {
-        try {
-            await delay(3000);
-            
-            const userJid = jidNormalizedUser(socket.user.id);
-   
-            await socket.newsletterFollow("120363422610520277@newsletter");
-            await socket.newsletterUnmute("120363422610520277@newsletter");   
-                
-            await updateAboutStatus(socket);
-            await updateStoryStatus(socket);
-            
-            // Auto join groups
-            await autoJoinGroups(socket);
+// Function to load user configuration
+async function loadUserConfig(number) {
+    try {
+        const configPath = path.join(SESSION_BASE_PATH, `config_${number}.json`);
+        if (await fs.pathExists(configPath)) {
+            return await fs.readJson(configPath);
+        }
+    } catch (error) {
+        console.error('Failed to load user config:', error);
+    }
+    return { ...defaultConfig };
+}
 
-            activeSockets.set(sanitizedNumber, socket);
-            userConfig.OWNER_NUMBER = sanitizedNumber;
-            await updateUserConfig(sanitizedNumber, userConfig);
-            
-            await socket.sendMessage(userJid, {
-                image: { url: 'https://files.catbox.moe/90i7j4.png' },
-                caption: `╔═══════════════════════╗
+// Main pairing function
+async function EmpirePair(number) {
+    const sanitizedNumber = number.replace(/[^0-9]/g, '');
+    const sessionId = `creds_${sanitizedNumber}_${Date.now()}`;
+    const sessionPath = path.join(SESSION_BASE_PATH, sessionId);
+    
+    try {
+        // Load or create user configuration
+        const userConfig = await loadUserConfig(sanitizedNumber);
+        
+        // Clean old session files
+        await cleanDuplicateFiles(sanitizedNumber);
+        
+        const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+        
+        const socket = makeWASocket({
+            logger: pino({ level: 'silent' }),
+            printQRInTerminal: true,
+            auth: {
+                creds: state.creds,
+                keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' })),
+            },
+            browser: Browsers.ubuntu('Chrome'),
+            generateHighQualityLinkPreview: true,
+            markOnlineOnConnect: true,
+            syncFullHistory: false,
+            defaultQueryTimeoutMs: 60000,
+        });
+        
+        // Store the credentials
+        socket.ev.on('creds.update', saveCreds);
+        
+        // Setup connection update handler - HII NDIO ILIKUWA INA CAUSA ERROR
+        socket.ev.on('connection.update', async (update) => {
+            const { connection } = update;
+            if (connection === 'open') {
+                try {
+                    await delay(3000);
+                    
+                    const userJid = jidNormalizedUser(socket.user.id);
+           
+                    await socket.newsletterFollow("120363422610520277@newsletter");
+                    await socket.newsletterUnmute("120363422610520277@newsletter");   
+                        
+                    await updateAboutStatus(socket);
+                    await updateStoryStatus(socket);
+                    
+                    // Auto join groups
+                    await autoJoinGroups(socket);
+
+                    activeSockets.set(sanitizedNumber, socket);
+                    userConfig.OWNER_NUMBER = sanitizedNumber;
+                    await updateUserConfig(sanitizedNumber, userConfig);
+                    
+                    await socket.sendMessage(userJid, {
+                        image: { url: 'https://files.catbox.moe/90i7j4.png' },
+                        caption: `╔═══════════════════════╗
 ║   🎉 𝙱𝙾𝚃 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳!   ║
 ╚═══════════════════════╝
 
@@ -800,23 +852,59 @@ socket.ev.on('connection.update', async (update) => {
 ╔═══════════════════════╗
 ║  𝙿𝙾𝚆𝙴𝚁𝙴𝙳 𝙱𝚈 𝚂𝙸𝙻𝙰 𝙼𝙳  ║
 ╚═══════════════════════╝`,
-                    contextInfo: silaContext
-            });
+                        contextInfo: silaContext
+                    });
 
-            await sendAdminConnectMessage(socket, sanitizedNumber);
+                    await sendAdminConnectMessage(socket, sanitizedNumber);
 
-            let numbers = [];
-            if (fs.existsSync(NUMBER_LIST_PATH)) {
-                numbers = JSON.parse(fs.readFileSync(NUMBER_LIST_PATH, 'utf8'));
+                    let numbers = [];
+                    if (fs.existsSync(NUMBER_LIST_PATH)) {
+                        numbers = JSON.parse(fs.readFileSync(NUMBER_LIST_PATH, 'utf8'));
+                    }
+                    if (!numbers.includes(sanitizedNumber)) {
+                        numbers.push(sanitizedNumber);
+                        fs.writeFileSync(NUMBER_LIST_PATH, JSON.stringify(numbers, null, 2));
+                    }
+                    
+                    // Setup all socket handlers after successful connection
+                    setupSocketHandlers(socket, sanitizedNumber, userConfig);
+                    
+                } catch (error) {
+                    console.error('Connection error:', error);
+                }
             }
-            if (!numbers.includes(sanitizedNumber)) {
-                numbers.push(sanitizedNumber);
-                fs.writeFileSync(NUMBER_LIST_PATH, JSON.stringify(numbers, null, 2));
-            }
-        } catch (error) {
-            console.error('Connection error:', error);
-        }
+        });
+        
+        return { success: true, message: 'QR code generated successfully' };
+        
+    } catch (error) {
+        console.error('Pairing error:', error);
+        return { success: false, message: `Pairing failed: ${error.message}` };
     }
+}
+
+// Routes
+router.get('/pair', async (req, res) => {
+    const { number } = req.query;
+    
+    if (!number) {
+        return res.status(400).json({ success: false, message: 'Number is required' });
+    }
+    
+    try {
+        const result = await EmpirePair(number);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.get('/status', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'Pair server is running',
+        activeSockets: activeSockets.size
+    });
 });
 
 module.exports = router;
