@@ -1,4 +1,4 @@
-const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const { downloadContentFromMessage } = require('baileys');
 
 module.exports = {
     handleCommand: async function(socket, msg, command, args, number, userConfig, silaContext) {
